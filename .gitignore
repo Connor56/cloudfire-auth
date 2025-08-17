@@ -1,2 +1,5 @@
 node_modules
 dist
+
+# Ignore service account key
+service-account-key.json
