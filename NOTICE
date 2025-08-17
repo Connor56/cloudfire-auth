@@ -1,0 +1,13 @@
+This software incorporates code from the following third-party components:
+
+-------------------------------------------------------------------------
+
+1.  Component: firebase-admin
+    Copyright 2021 Google Inc.
+
+    This component is licensed under the Apache License, Version 2.0.
+    The full text of the license can be found in the LICENSE file
+    distributed with this software.
+
+    The original source code can be found at:
+    https://github.com/firebase/firebase-admin-node
