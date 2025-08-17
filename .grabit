@@ -1,0 +1,45 @@
+// How to use:
+// The file is split into sections, each section is used to determine the behaviour of the script.
+// The sections are:
+// - exclude: files to exclude from the context using regex, one regex per line
+// - include: files to include in the context using regex, one regex per line (doesn't work yet)
+// - messsage: starting message before the file data, used to help prompt the LLM
+//
+// Exclude takes precedence over include.
+// No section is required, grabit will still run without a .grabit file, this just helps control it.
+// Comments are denoted by `//` at the start of a line.
+// The message is prepended to the start of the context and is used to guide the LLM.
+
+## exclude
+
+// Exclude git files
+.*\.git
+
+// Exclude commonly autogenned files
+.*package-lock\.json
+.*\.DS_Store
+.*node_modules
+.*\.grabit
+
+// Python
+.*\.whl
+.*\.tar\.gz
+.*\.pyc
+
+// Java
+
+
+## include
+
+## message
+
+// This option can be overridden by the command line argument -ng (--no-git)
+// When set, will switch off the git history of the files read by `grabit scan`
+## git file logs
+true
+
+// When set, grabit will get the git history of the entire repo and append it to
+// the context for the LLM to get more overall context of what's happened.
+## git all logs
+false
+

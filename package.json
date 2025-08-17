@@ -1,0 +1,21 @@
+{
+  "name": "cloudfire-auth",
+  "version": "0.1.0",
+  "description": "Firebase Auth in Cloudflare Workers.",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "vitest"
+  },
+  "author": "Connor Skelland",
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.2"
+  },
+  "files": [
+    "dist"
+  ]
+}
