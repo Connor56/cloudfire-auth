@@ -11,18 +11,28 @@
     }
   },
   "scripts": {
-    "test": "vitest",
+    "test": "vitest run",
     "build": "tsup"
   },
   "author": "Connor Skelland",
   "license": "MIT",
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250816.0",
+    "@types/node": "^24.3.0",
     "tsup": "^8.5.0",
     "tsx": "^4.20.4",
     "typescript": "^5.9.2",
     "vitest": "^3.1.0"
   },
   "files": [
-    "dist"
-  ]
+    "dist",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "package.json",
+    "third_party/*"
+  ],
+  "dependencies": {
+    "jose": "^6.0.12"
+  }
 }
