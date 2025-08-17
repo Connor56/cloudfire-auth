@@ -1,16 +1,30 @@
 import { importPKCS8, SignJWT } from "jose";
-import type { ServiceAccountKey } from "../types.js";
 import type { KVNamespace } from "@cloudflare/workers-types";
+import type { ServiceAccountKey } from "../types.js";
+
+interface Oauth2TokenResponse {
+  access_token: string;
+  expires_in: number;
+  token_type: string;
+  scope?: string;
+}
 
 /**
  * Gets an OAuth2 access token from Google's OAuth2 server. This token is
  * required for accessing the Firebase Auth REST API via fetch requests.
+ *
+ * The token is stored in the KV namespace for the amount of time which is
+ * shorter:
+ *
+ * - The provided expiration time
+ * - The expiration time returned from Google's OAuth2 server
+ *
  * @returns The OAuth2 access token
  */
 export async function getOauth2AccessTokenHandler(
   serviceAccountKey: ServiceAccountKey,
-  kvNamespace?: KVNamespace,
-  expiration: number = 3000 // 50 minutes
+  expiration: number = 3000, // 50 minutes
+  kvNamespace?: KVNamespace
 ): Promise<string> {
   const signedJwt = await createSignedJwt(serviceAccountKey, expiration);
 
@@ -25,16 +39,17 @@ export async function getOauth2AccessTokenHandler(
     }),
   });
 
-  const data = await response.json();
-  console.log("data", data);
+  const oauth2TokenResponse = (await response.json()) as Oauth2TokenResponse;
+
+  const shortestExpiration = Math.min(expiration, oauth2TokenResponse.expires_in);
 
   if (kvNamespace) {
-    await kvNamespace.put("oauth2Token", data.access_token, {
-      expiration,
+    await kvNamespace.put("oauth2Token", oauth2TokenResponse.access_token, {
+      expiration: shortestExpiration,
     });
   }
 
-  return data.access_token;
+  return oauth2TokenResponse.access_token;
 }
 
 /**
