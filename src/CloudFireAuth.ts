@@ -23,6 +23,7 @@ import type {
   CreateRequest,
   UpdateRequest,
   DeleteUsersResult,
+  ServiceAccountKey,
 } from "./types.js";
 
 // Rest API
@@ -41,19 +42,6 @@ import { setCustomUserClaimsHandler } from "./rest-api/set-custom-user-claims.js
 import { revokeRefreshTokensHandler } from "./rest-api/revoke-refresh-tokens.js";
 import { verifySessionCookieHandler } from "./rest-api/verify-session-cookie.js";
 
-export interface ServiceAccountKey {
-  type: string;
-  project_id: string;
-  private_key_id: string;
-  private_key: string;
-  client_email: string;
-  client_id: string;
-  auth_uri: string;
-  token_uri: string;
-  auth_provider_x509_cert_url: string;
-  client_x509_cert_url: string;
-  universe_domain: string;
-}
 
 export class CloudFireAuth {
   private projectId: string;
