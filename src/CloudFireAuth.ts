@@ -354,7 +354,7 @@ export class CloudFireAuth {
 
     if (!token) {
       // Sets the token on the KV namespace
-      token = await getOauth2AccessTokenHandler(this.serviceAccountKey, this.kvNamespace);
+      token = await getOauth2AccessTokenHandler(this.serviceAccountKey, 3000, this.kvNamespace);
     }
 
     this.oauth2Token = token;
