@@ -8,6 +8,7 @@ import type {
   UpdateRequest,
   DeleteUsersResult,
 } from "./types/firebase-admin/index.js";
+import type { ServiceAccountKey } from "./types/service-account-key.js";
 
 export type {
   DecodedIdToken,
@@ -19,3 +20,5 @@ export type {
   UpdateRequest,
   DeleteUsersResult,
 };
+
+export type { ServiceAccountKey };
