@@ -334,14 +334,31 @@ export class CloudFireAuth {
    * Gets an OAuth2 access token from Google's OAuth2 server. This token is
    * required for accessing the Firebase Auth REST API via fetch requests.
    *
-   * Checks if a token already exists, if not
+   * Checks if a token already exists in the KV namespace. If not, it gets a new
+   * token from Google's OAuth2 server, and sets it on the KV namespace.¨
+   *
+   * This code is under the MIT Licence.
+   *
    * @returns The OAuth2 access token
    */
   private async getOauth2AccessToken() {
-    if (!this.oauth2Token) {
-      this.oauth2Token = await getOauth2AccessTokenHandler(this.serviceAccountKey, this.kvNamespace);
+    if (this.oauth2Token) {
+      return this.oauth2Token;
     }
 
-    return this.oauth2Token;
+    let token: string | null = null;
+
+    if (this.kvNamespace) {
+      token = await this.kvNamespace?.get("oauth2Token");
+    }
+
+    if (!token) {
+      // Sets the token on the KV namespace
+      token = await getOauth2AccessTokenHandler(this.serviceAccountKey, this.kvNamespace);
+    }
+
+    this.oauth2Token = token;
+
+    return token;
   }
 }
