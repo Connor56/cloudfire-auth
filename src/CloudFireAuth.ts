@@ -26,6 +26,8 @@ import type {
   ServiceAccountKey,
 } from "./types.js";
 
+import type { KVNamespace } from "@cloudflare/workers-types";
+
 // Rest API
 import { verifyIdTokenHandler } from "./rest-api/verify-id-token.js";
 import { getUserHandler } from "./rest-api/get-user.js";
@@ -42,14 +44,19 @@ import { setCustomUserClaimsHandler } from "./rest-api/set-custom-user-claims.js
 import { revokeRefreshTokensHandler } from "./rest-api/revoke-refresh-tokens.js";
 import { verifySessionCookieHandler } from "./rest-api/verify-session-cookie.js";
 
+// Google Auth
+import { getOauth2AccessTokenHandler } from "./google-auth/get-oauth-2-token.js";
 
 export class CloudFireAuth {
   private projectId: string;
   private serviceAccountKey: ServiceAccountKey;
+  private oauth2Token?: string;
+  private kvNamespace?: KVNamespace;
 
-  constructor(projectId: string, serviceAccountKey: any) {
+  constructor(projectId: string, serviceAccountKey: ServiceAccountKey, kvNamespace?: KVNamespace) {
     this.projectId = projectId;
     this.serviceAccountKey = serviceAccountKey;
+    this.kvNamespace = kvNamespace;
   }
   /**
    * Verifies a Firebase ID token (JWT). If the token is valid, the promise is
@@ -76,7 +83,8 @@ export class CloudFireAuth {
    *   promise.
    */
   async verifyIdToken(idToken: string, checkRevoked?: boolean): Promise<DecodedIdToken> {
-    return await verifyIdTokenHandler(idToken, checkRevoked);
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await verifyIdTokenHandler(idToken, this.getOauth2AccessToken(), checkRevoked);
   }
   /**
    * Gets the user data for the user corresponding to a given `uid`.
@@ -320,5 +328,20 @@ export class CloudFireAuth {
    */
   async verifySessionCookie(sessionCookie: string, checkRevoked?: boolean): Promise<DecodedIdToken> {
     return await verifySessionCookieHandler(sessionCookie, checkRevoked);
+  }
+
+  /**
+   * Gets an OAuth2 access token from Google's OAuth2 server. This token is
+   * required for accessing the Firebase Auth REST API via fetch requests.
+   *
+   * Checks if a token already exists, if not
+   * @returns The OAuth2 access token
+   */
+  private async getOauth2AccessToken() {
+    if (!this.oauth2Token) {
+      this.oauth2Token = await getOauth2AccessTokenHandler(this.serviceAccountKey, this.kvNamespace);
+    }
+
+    return this.oauth2Token;
   }
 }
