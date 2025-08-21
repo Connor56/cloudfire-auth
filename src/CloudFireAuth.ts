@@ -84,7 +84,7 @@ export class CloudFireAuth {
    */
   async verifyIdToken(idToken: string, checkRevoked?: boolean): Promise<DecodedIdToken> {
     const oauth2Token = await this.getOauth2AccessToken();
-    return await verifyIdTokenHandler(idToken, this.getOauth2AccessToken(), checkRevoked);
+    return await verifyIdTokenHandler(idToken, oauth2Token, this.kvNamespace, checkRevoked);
   }
   /**
    * Gets the user data for the user corresponding to a given `uid`.
