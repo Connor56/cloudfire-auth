@@ -1,9 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { verifyIdTokenHandler } from "../src/rest-api/verify-id-token.js";
+import { verifyIdTokenHandler, validateJwtHeader } from "../src/rest-api/verify-id-token.js";
 import { getOauth2AccessTokenHandler } from "../src/google-auth/get-oauth-2-token.js";
 import serviceAccountKey from "./service-account-key.json";
 import { env } from "process";
+import { config } from "dotenv";
 // import * as admin from "firebase-admin";
+
+config({ path: "test/.env" });
 
 // const serviceAccountKey = admin.initializeApp({
 //   credential: admin.credential.cert(serviceAccountKey),
@@ -19,11 +22,23 @@ describe.skipIf(doNotRunIntegrationTests)("Verify ID Token Handler Integration T
 
     const signInData = await signInWithPassword(oauth2Token);
 
-    const decodedToken = await verifyIdTokenHandler(signInData.idToken, oauth2Token);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // expect(decodedToken).toBeDefined();
-    // expect(decodedToken.uid).toBe("test-user-123");
-    // expect(decodedToken.iss).toContain(serviceAccountKey.project_id);
+    const decodedToken = await verifyIdTokenHandler(
+      signInData.idToken,
+      "full-stack-gaming-auth",
+      oauth2Token,
+      undefined,
+      true
+    );
+
+    console.log("The decoded token is:", decodedToken);
+
+    expect(decodedToken).toBeDefined();
+    expect(decodedToken.name).toBe("test-user-123");
+    expect(decodedToken.iss).toContain(serviceAccountKey.project_id);
+    expect(decodedToken.email).toBe("test-user-123@example.com");
+    expect(decodedToken.email_verified).toBe(false);
 
     deleteUser(tokenData.localId, oauth2Token);
   }, 10000);
@@ -48,9 +63,8 @@ async function addANewUserWithSignUp(oauth2Token: string) {
     }),
   });
 
-  console.log(response);
   const data = await response.json();
-  console.log(data);
+
   return data;
 }
 
@@ -69,13 +83,12 @@ async function signInWithPassword(oauth2Token: string) {
     body: JSON.stringify({
       email: "test-user-123@example.com",
       password: "password",
+      returnSecureToken: true,
     }),
   });
 
-  console.log(response);
-
   const data = await response.json();
-  console.log(data);
+
   return data;
 }
 
