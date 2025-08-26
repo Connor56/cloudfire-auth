@@ -27,30 +27,46 @@ import { decodeJwt, decodeProtectedHeader, importX509, jwtVerify } from "jose";
  */
 export async function verifyIdTokenHandler(
   idToken: string,
+  projectId: string,
   oauth2Token: string,
   kv?: KVNamespace,
   checkRevoked?: boolean
 ): Promise<DecodedIdToken> {
   return new Promise(async (resolve, reject) => {
-    return resolve("hi");
-    const { isValid: isValidBody, errorMessage: errorMessageBody } = await validateJwtBody(idToken);
+    const { isValid: isValidBody, errorMessage: errorMessageBody } = await validateJwtBody(idToken, projectId);
 
     if (!isValidBody) {
       reject(new Error(errorMessageBody));
     }
 
-    const { isValid: isValidHeader, errorMessage: errorMessageHeader, keyId } = await validateJwtHeader(idToken);
+    const {
+      isValid: isValidHeader,
+      errorMessage: errorMessageHeader,
+      signingKey,
+    } = await validateJwtHeader(idToken, kv);
 
     if (!isValidHeader) {
       reject(new Error(errorMessageHeader));
     }
 
-    const GooglePublicKeys = await getGooglePublicKeys(kv, keyId);
+    console.log("signingKey", signingKey);
+    console.log("idToken", idToken);
+    console.log("isValidHeader", isValidHeader);
 
-    const { isValid: tokenVerified, payload: tokenPayload } = await verifyToken(idToken, GooglePublicKeys);
+    const { isValid: tokenVerified, payload: tokenPayload } = await verifyToken(idToken, signingKey!, projectId);
 
     if (!tokenVerified) {
       reject(new Error("Token is invalid"));
+    }
+
+    const localId = tokenPayload?.sub as string;
+
+    if (checkRevoked === true) {
+      const tokenValidSinceTime = await getTokenValidSinceTime(localId, oauth2Token);
+
+      if (tokenValidSinceTime > tokenPayload?.iat) {
+        reject(new Error("Token is revoked"));
+      }
     }
 
     resolve(tokenPayload as DecodedIdToken);
@@ -58,52 +74,165 @@ export async function verifyIdTokenHandler(
 }
 
 /**
- * Gets the Google public keys from the KV namespace or from the Google API.
- * If the key doesn't exist in the KV namespace, the Google API is queried and
- * the result is stored in the KV namespace.
- * @param kv - The KV namespace to get the Google public keys from.
- * @param keyId - The key ID that was used to sign the token in question.
- * @returns The Google public keys.
+ * Gets the token validSince time for the user corresponding to the ID token.
+ * If the token was issued before this validSince time, the token is invalid.
+ * @param localId - The local ID of the user to get the token valid since time for.
+ * @param oauth2Token - The OAuth2 token for the Firebase Admin API.
+ * @returns The token valid since time.
  */
-async function getGooglePublicKeys(kv?: KVNamespace, keyId?: string): Promise<Record<string, string>> {
-  if (kv) {
-    const googlePublicKeys = await kv.get(`googlePublicKeys-${keyId}`);
-    if (googlePublicKeys) {
-      return JSON.parse(googlePublicKeys);
-    }
-  }
+async function getTokenValidSinceTime(localId: string, oauth2Token: string): Promise<number> {
+  const accountLookupResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${oauth2Token}`,
+    },
+    body: JSON.stringify({ localId: [localId] }),
+  });
 
-  const googlePublicKeys = await fetch(
-    "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
-  );
+  const accountLookupJson = await accountLookupResponse.json();
+  console.log("accountLookupJson", JSON.stringify(accountLookupJson, null, 2));
 
-  const googlePublicKeysJson = await googlePublicKeys.json();
-
-  return googlePublicKeysJson;
+  return accountLookupJson.users[0].validSince as number;
 }
 
 /**
- * Validates the body of a JWT token.
- * @param token - The JWT token to validate.
+ * Validates the body of a JWT. The token is expected to come from Firebase Auth,
+ * because of this it has specific required fields that are checked for. If these
+ * fields are not present, the token is invalid.
+ *
+ * @param token - The JWT to validate.
  * @returns True if the token is valid, false and an error message if the token is invalid.
  */
-async function validateJwtBody(token: string): Promise<{ isValid: boolean; errorMessage?: string }> {
-  const firebaseJwtBody = decodeJwt(token);
+async function validateJwtBody(token: string, projectId: string): Promise<{ isValid: boolean; errorMessage?: string }> {
+  const firebaseJwtBody: DecodedIdToken = decodeJwt(token) as DecodedIdToken;
 
-  if (firebaseJwtBody.aud !== this.projectId) {
+  console.log("just the decoded token", decodeJwt(token));
+
+  if (firebaseJwtBody.aud !== projectId) {
     return {
       isValid: false,
-      errorMessage: `Token audience does not match project ID, expected ${this.projectId}, got ${firebaseJwtBody.aud}`,
+      errorMessage: `Token audience does not match project ID, expected ${projectId}, got ${firebaseJwtBody.aud}`,
     };
   }
 
   if (typeof firebaseJwtBody.sub !== "string") {
-    return { isValid: false, errorMessage: "Token subject is not a string" };
+    return {
+      isValid: false,
+      errorMessage: "Token subject is not a string",
+    };
   }
+
+  if (firebaseJwtBody.sub === "") {
+    return {
+      isValid: false,
+      errorMessage: `Token subject is empty`,
+    };
+  }
+
+  if (firebaseJwtBody.iss !== `https://securetoken.google.com/${projectId}`) {
+    return {
+      isValid: false,
+      errorMessage: `Token issuer does not match project ID, expected https://securetoken.google.com/${projectId}, got ${firebaseJwtBody.iss}`,
+    };
+  }
+
+  const currentTime = Math.ceil(Date.now() / 1000);
+
+  if (firebaseJwtBody.exp && firebaseJwtBody.exp < currentTime) {
+    return { isValid: false, errorMessage: "Token expiration date is in the past" };
+  }
+
+  if (firebaseJwtBody.iat && firebaseJwtBody.iat > currentTime) {
+    return { isValid: false, errorMessage: "Token issued at date is in the future" };
+  }
+
+  if (firebaseJwtBody.auth_time && typeof firebaseJwtBody.auth_time !== "number") {
+    return { isValid: false, errorMessage: "Token auth time is not a number" };
+  }
+
+  if ((firebaseJwtBody.auth_time as number) > currentTime) {
+    return { isValid: false, errorMessage: "Token auth time is in the future" };
+  }
+
+  return { isValid: true };
 }
 
-async function validateJwtHeader(token: string): Promise<{ isValid: boolean; errorMessage?: string }> {
+/**
+ * Validates the header of a Firebase JWT. First checks the algorithm type is
+ * the expected type, then checks the key ID is valid either by checking in the
+ * KV namespace or by fetching the key from the Google API.
+ *
+ * If a new key is fetched from the Google API that was used to sign the token
+ * then it is stored in the KV namespace for the duration of the cache time
+ * returned from the Google API in the headers.
+ *
+ * @param token - The JWT to validate.
+ * @param kv - The KV namespace to get the Google public keys from.
+ * @returns True and the signing key if the token is valid, false and an error message if the token is invalid.
+ */
+export async function validateJwtHeader(
+  token: string,
+  kv?: KVNamespace
+): Promise<{ isValid: boolean; errorMessage?: string; signingKey?: string }> {
   const firebaseJwtHeader = decodeProtectedHeader(token);
+
+  if (firebaseJwtHeader.alg !== "RS256") {
+    return { isValid: false, errorMessage: "Token algorithm is not RS256" };
+  }
+
+  const expectedKeyId = `googlePublicKey-${firebaseJwtHeader.kid}`;
+
+  if (kv) {
+    const googlePublicKey = await kv.get(expectedKeyId);
+    if (googlePublicKey) {
+      return { isValid: true, signingKey: googlePublicKey };
+    }
+  }
+
+  console.log("Token key ID is not in the KV namespace, fetching from Google API");
+
+  const googlePublicKeys = await getGooglePublicKeys();
+
+  const signingKey = googlePublicKeys.keys[firebaseJwtHeader.kid as string];
+  if (!signingKey) {
+    return { isValid: false, errorMessage: "Token key ID is not in the Google API" };
+  }
+
+  if (kv) {
+    const cacheDuration = googlePublicKeys.cache_duration;
+    if (cacheDuration > 0) {
+      await kv.put(expectedKeyId, signingKey, { expirationTtl: cacheDuration });
+    }
+  }
+
+  return { isValid: true, signingKey };
+}
+
+interface GooglePublicKeysResponse {
+  keys: Record<string, string>;
+  cache_duration: number; // in seconds
+}
+
+/**
+ * Pulls the google public keys from the Google API and extracts the cache time
+ * for the keys. Returns these in an object.
+ * @returns The Google public keys.
+ */
+async function getGooglePublicKeys(): Promise<GooglePublicKeysResponse> {
+  const googlePublicKeysResponse = await fetch(
+    "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+  );
+
+  const googlePublicKeysJson = await googlePublicKeysResponse.json();
+  const cacheDuration = googlePublicKeysResponse.headers.get("cache-control")?.split("=")[1];
+
+  const googlePublicKeys: GooglePublicKeysResponse = {
+    keys: googlePublicKeysJson as Record<string, string>,
+    cache_duration: cacheDuration ? parseInt(cacheDuration) : 0,
+  };
+
+  return googlePublicKeys;
 }
 
 /**
@@ -113,141 +242,19 @@ async function validateJwtHeader(token: string): Promise<{ isValid: boolean; err
  * @param token - The Firebase ID token to verify
  * @returns True if the token is valid, false otherwise
  */
-async function verifyToken(token: string): Promise<{ isValid: boolean; payload?: JWTPayload }> {
-  const firebaseJwtBody = decodeJwt(token);
-
-  let { isValid, errorMessage } = this.validateTokenBody(firebaseJwtBody);
-  if (!isValid) {
-    console.error("token body is invalid", errorMessage);
-    return { isValid: false };
-  }
-
-  console.log("token body is valid");
-
-  const firebaseJwtHeader = decodeProtectedHeader(token);
-
-  ({ isValid, errorMessage } = this.validateTokenHeader(firebaseJwtHeader));
-  if (!isValid) {
-    console.error("token header is invalid", errorMessage);
-    return { isValid: false };
-  }
-
-  console.log("token header is valid");
-
-  const allGooglesPublicKeysResponse = await fetch(
-    "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
-  );
-  const allGooglesPublicKeys = await allGooglesPublicKeysResponse.json();
-
-  const keyIdInTokenHeader = firebaseJwtHeader.kid as string;
-
-  const isTokenKeyIdInGoogleKeys = Object.keys(allGooglesPublicKeys).includes(keyIdInTokenHeader);
-  if (!isTokenKeyIdInGoogleKeys) {
-    return { isValid: false };
-  }
-
-  console.log("token key id is in google keys");
-
-  const keyIdValue = allGooglesPublicKeys[keyIdInTokenHeader];
-  const tokenVerificationKey = await importX509(keyIdValue, "RS256");
+async function verifyToken(
+  token: string,
+  signingKey: string,
+  projectId: string
+): Promise<{ isValid: boolean; payload?: DecodedIdToken }> {
+  const tokenVerificationKey = await importX509(signingKey, "RS256");
 
   const { payload } = await jwtVerify(token, tokenVerificationKey, {
-    issuer: `https://securetoken.google.com/${this.projectId}`,
-    audience: this.projectId,
+    issuer: `https://securetoken.google.com/${projectId}`,
+    audience: projectId,
   });
 
-  console.log("token has been verified");
+  console.log("Token verified");
 
-  return { isValid: true, payload };
-}
-
-/**
- * Checks the body of the token to ensure it contains valid values set by
- * Firebase Auth
- * @param decodedToken - The decoded token
- * @returns True if the token is valid, false otherwise
- */
-function validateTokenBody(decodedToken: JWTPayload): { isValid: boolean; errorMessage?: string } {
-  if (decodedToken.aud !== this.projectId) {
-    return {
-      isValid: false,
-      errorMessage: `Token audience does not match project ID, expected ${this.projectId}, got ${decodedToken.aud}`,
-    };
-  }
-
-  if (typeof decodedToken.sub !== "string") {
-    return {
-      isValid: false,
-      errorMessage: "Token subject is not a string",
-    };
-  }
-
-  if (decodedToken.sub === "") {
-    return {
-      isValid: false,
-      errorMessage: `Token subject is empty`,
-    };
-  }
-
-  if (decodedToken.iss !== `https://securetoken.google.com/${this.projectId}`) {
-    return {
-      isValid: false,
-      errorMessage: `Token issuer does not match project ID, expected https://securetoken.google.com/${this.projectId}, got ${decodedToken.iss}`,
-    };
-  }
-
-  if (decodedToken.exp && decodedToken.exp < Date.now() / 1000) {
-    return { isValid: false, errorMessage: "Token expiration date is in the past" };
-  }
-
-  if (decodedToken.iat && decodedToken.iat > Date.now() / 1000) {
-    return { isValid: false, errorMessage: "Token issued at date is in the future" };
-  }
-
-  if (decodedToken.auth_time && typeof decodedToken.auth_time !== "number") {
-    return { isValid: false, errorMessage: "Token auth time is not a number" };
-  }
-
-  if ((decodedToken.auth_time as number) > Date.now() / 1000) {
-    return { isValid: false, errorMessage: "Token auth time is in the future" };
-  }
-
-  return { isValid: true };
-}
-
-/**
- * Checks the header of the token to ensure it contains valid values set by
- * Firebase Auth
- * @param protectedHeader - The protected header
- * @returns True if the header is valid, false otherwise
- */
-function validateTokenHeader(protectedHeader: ProtectedHeaderParameters): {
-  isValid: boolean;
-  errorMessage?: string;
-} {
-  if (protectedHeader.alg !== "RS256") {
-    return { isValid: false, errorMessage: "Token algorithm is not RS256" };
-  }
-
-  if (protectedHeader.typ !== "JWT") {
-    return { isValid: false, errorMessage: "Token type is not JWT" };
-  }
-
-  if (protectedHeader.kid === undefined) {
-    return { isValid: false, errorMessage: "Token key ID is undefined" };
-  }
-
-  return { isValid: true };
-}
-
-/**
- * Decodes a JWT token without verifying its signature
- */
-function decodeToken(token: string): JWTPayload | null {
-  try {
-    return decodeJwt(token);
-  } catch (error) {
-    console.error("Error decoding token:", error);
-    return null;
-  }
+  return { isValid: true, payload: payload as DecodedIdToken };
 }
