@@ -1,8 +1,5 @@
-import { describe, it, expect, afterAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { verifyIdTokenHandler, validateJwtHeader } from "../../src/rest-api/verify-id-token.js";
-import { getOauth2AccessTokenHandler } from "../../src/google-auth/get-oauth-2-token.js";
-import serviceAccountKey from "../service-account-key.json";
-import { env } from "process";
 import { config } from "dotenv";
 import { KVNamespace } from "@cloudflare/workers-types";
 import { SignJWT, generateKeyPair, importX509 } from "jose";
@@ -76,7 +73,7 @@ describe("Verify ID Token Handler Unit Tests", () => {
         expect(error).toBeInstanceOf(Error);
       } finally {
         global.fetch = originalFetch;
-        mockImportX509.mockClear();
+        mockImportX509.mockReset();
       }
     }, 1000);
 
@@ -173,7 +170,7 @@ describe("Verify ID Token Handler Unit Tests", () => {
 
     it("should reject revoked token when checkRevoked=true", async () => {
       const mockKV = createMockKV() as KVNamespace;
-      const validToken = await createValidTokenForRevocationTest(mockProjectId);
+      const { token: validToken, publicKey } = await createValidTokenForRevocationTest(mockProjectId);
 
       // Mock the accounts:lookup API to return a validSince time after the token iat
       const originalFetch = global.fetch;
@@ -183,7 +180,7 @@ describe("Verify ID Token Handler Unit Tests", () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              "mock-key-id": "-----BEGIN CERTIFICATE-----\nMockCertificate\n-----END CERTIFICATE-----",
+              "mock-key-id": publicKey,
             }),
           headers: new Headers({ "cache-control": "max-age=3600" }),
         })
@@ -198,6 +195,9 @@ describe("Verify ID Token Handler Unit Tests", () => {
               ],
             }),
         });
+
+      const mockImportX509 = vi.mocked(importX509);
+      mockImportX509.mockResolvedValue(publicKey);
 
       try {
         await verifyIdTokenHandler(
@@ -214,6 +214,7 @@ describe("Verify ID Token Handler Unit Tests", () => {
         expect(error.message).toMatch(/Token is (invalid|revoked)/);
       } finally {
         global.fetch = originalFetch;
+        mockImportX509.mockReset();
       }
     });
 
@@ -223,17 +224,19 @@ describe("Verify ID Token Handler Unit Tests", () => {
 
       // Mock network failure
       const originalFetch = global.fetch;
-      global.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
+      const networkError = new Error("Network error");
+      global.fetch = vi.fn().mockRejectedValue(networkError);
 
       try {
         await verifyIdTokenHandler(validToken, mockProjectId, mockOauth2Token, mockKV, false);
         expect.fail("Expected network error to cause failure");
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
+        expect(error).toBe(networkError);
       } finally {
         global.fetch = originalFetch;
       }
-    });
+    }, 500);
   });
 
   describe("validateJwtHeader function", () => {
@@ -322,6 +325,28 @@ async function createValidMockToken(projectId: string): Promise<CreateValidMockT
       identities: { email: ["test@example.com"] },
       sign_in_provider: "password",
     },
+  })
+    .setProtectedHeader({ alg: "RS256", kid: "mock-key-id" })
+    .sign(privateKey);
+
+  return { token, publicKey, privateKey };
+}
+
+/**
+ * Creates a token for revocation testing (with known iat)
+ */
+async function createValidTokenForRevocationTest(projectId: string): Promise<CreateValidMockTokenResult> {
+  const { publicKey, privateKey } = await generateKeyPair("RS256");
+  const currentTime = Math.floor(Date.now() / 1000);
+
+  // Create a token with iat that can be compared against validSince
+  const token = await new SignJWT({
+    iss: `https://securetoken.google.com/${projectId}`,
+    aud: projectId,
+    sub: "revocation-test-user",
+    iat: currentTime - 3600, // 1 hour ago, so it can be revoked
+    exp: currentTime + 3600,
+    auth_time: currentTime - 3600,
   })
     .setProtectedHeader({ alg: "RS256", kid: "mock-key-id" })
     .sign(privateKey);
@@ -463,26 +488,6 @@ async function createTokenWithWrongAlgorithm(projectId: string): Promise<string>
   })
     .setProtectedHeader({ alg: "HS256", kid: "mock-key-id" })
     .sign(secret);
-}
-
-/**
- * Creates a token for revocation testing (with known iat)
- */
-async function createValidTokenForRevocationTest(projectId: string): Promise<string> {
-  const { privateKey } = await generateKeyPair("RS256");
-  const currentTime = Math.floor(Date.now() / 1000);
-
-  // Create a token with iat that can be compared against validSince
-  return await new SignJWT({
-    iss: `https://securetoken.google.com/${projectId}`,
-    aud: projectId,
-    sub: "revocation-test-user",
-    iat: currentTime - 3600, // 1 hour ago, so it can be revoked
-    exp: currentTime + 3600,
-    auth_time: currentTime - 3600,
-  })
-    .setProtectedHeader({ alg: "RS256", kid: "mock-key-id" })
-    .sign(privateKey);
 }
 
 /**
