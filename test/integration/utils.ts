@@ -113,3 +113,31 @@ export async function getUserByEmail(email: string, oauth2Token: string) {
 
   return data;
 }
+
+/**
+ * Gets a user by local ID from the firebase auth database.
+ * @param localId - The local ID of the user to get.
+ * @param oauth2Token - The OAuth2 token for the Firebase Admin API.
+ * @returns The user data including custom claims.
+ */
+export async function getUserByLocalId(localId: string, oauth2Token: string) {
+  const response = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:lookup", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${oauth2Token}`,
+    },
+    body: JSON.stringify({
+      localId: [localId],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to get user: ${response.status} ${response.statusText}, ${await response.text()}`);
+  }
+
+  const data = await response.json();
+  console.log("getUserByLocalId response", data);
+
+  return data;
+}
