@@ -29,7 +29,7 @@ export async function revokeUserRefreshTokens(localId: string, oauth2Token: stri
  * @param oauth2Token - The OAuth2 token for the Firebase Admin API.
  * @returns The custom token for the user.
  */
-export async function addANewUserWithSignUp(oauth2Token: string) {
+export async function addANewUserWithSignUp(oauth2Token: string, email: string, displayName: string) {
   const response = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp", {
     method: "POST",
     headers: {
@@ -37,9 +37,9 @@ export async function addANewUserWithSignUp(oauth2Token: string) {
       Authorization: `Bearer ${oauth2Token}`,
     },
     body: JSON.stringify({
-      email: "test-user-123@example.com",
+      email: email,
       password: "password",
-      displayName: "test-user-123",
+      displayName: displayName,
     }),
   });
 
@@ -53,7 +53,7 @@ export async function addANewUserWithSignUp(oauth2Token: string) {
  * @param oauth2Token - The OAuth2 token for the Firebase Admin API.
  * @returns The sign in response data including idToken.
  */
-export async function signInWithPassword(oauth2Token: string) {
+export async function signInWithPassword(oauth2Token: string, email: string) {
   const response = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword", {
     method: "POST",
     headers: {
@@ -61,7 +61,7 @@ export async function signInWithPassword(oauth2Token: string) {
       Authorization: `Bearer ${oauth2Token}`,
     },
     body: JSON.stringify({
-      email: "test-user-123@example.com",
+      email: email,
       password: "password",
       returnSecureToken: true,
     }),
