@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { getOauth2AccessTokenHandler } from "../src/google-auth/get-oauth-2-token.js";
-import serviceAccountKey from "./service-account-key.json";
+import { getOauth2AccessTokenHandler } from "../../src/google-auth/get-oauth-2-token.js";
+import serviceAccountKey from "../service-account-key.json";
 import { env } from "process";
 
 const doNotRunIntegrationTests = env.RUN_INTEGRATION_TESTS !== "true";
