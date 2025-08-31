@@ -80,10 +80,15 @@ async function getTokenValidSinceTime(localId: string, oauth2Token: string): Pro
     body: JSON.stringify({ localId: [localId] }),
   });
 
-  const accountLookupJson = await accountLookupResponse.json();
-  console.log("accountLookupJson", JSON.stringify(accountLookupJson, null, 2));
+  const accountLookupJson = (await accountLookupResponse.json()) as {
+    users: Array<{ validSince: string }>;
+  };
 
-  return accountLookupJson.users[0].validSince as number;
+  if (!accountLookupJson.users[0]?.validSince) {
+    throw new Error("Token valid since time is not a string");
+  }
+
+  return parseInt(accountLookupJson.users[0].validSince);
 }
 
 /**
@@ -97,7 +102,7 @@ async function getTokenValidSinceTime(localId: string, oauth2Token: string): Pro
 async function validateJwtBody(token: string, projectId: string): Promise<{ isValid: boolean; errorMessage?: string }> {
   const firebaseJwtBody: DecodedIdToken = decodeJwt(token) as DecodedIdToken;
 
-  console.log("just the decoded token", decodeJwt(token));
+  // console.log("just the decoded token", decodeJwt(token));
 
   if (firebaseJwtBody.aud !== projectId) {
     return {
@@ -167,6 +172,8 @@ export async function validateJwtHeader(
 ): Promise<{ isValid: boolean; errorMessage?: string; signingKey?: string }> {
   const firebaseJwtHeader = decodeProtectedHeader(token);
 
+  // console.log("firebaseJwtHeader", firebaseJwtHeader);
+
   if (firebaseJwtHeader.alg !== "RS256") {
     return { isValid: false, errorMessage: "Token algorithm is not RS256" };
   }
@@ -213,6 +220,8 @@ async function getGooglePublicKeys(): Promise<GooglePublicKeysResponse> {
   const googlePublicKeysResponse = await fetch(
     "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
   );
+
+  console.log("googlePublicKeysResponse", googlePublicKeysResponse.status);
 
   const googlePublicKeysJson = await googlePublicKeysResponse.json();
   const cacheDuration = googlePublicKeysResponse.headers.get("cache-control")?.split("=")[1];
