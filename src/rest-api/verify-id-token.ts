@@ -32,45 +32,35 @@ export async function verifyIdTokenHandler(
   kv?: KVNamespace,
   checkRevoked?: boolean
 ): Promise<DecodedIdToken> {
-  return new Promise(async (resolve, reject) => {
-    const { isValid: isValidBody, errorMessage: errorMessageBody } = await validateJwtBody(idToken, projectId);
+  const { isValid: isValidBody, errorMessage: errorMessageBody } = await validateJwtBody(idToken, projectId);
 
-    if (!isValidBody) {
-      reject(new Error(errorMessageBody));
+  if (!isValidBody) {
+    throw new Error(errorMessageBody);
+  }
+
+  const { isValid: isValidHeader, errorMessage: errorMessageHeader, signingKey } = await validateJwtHeader(idToken, kv);
+
+  if (!isValidHeader) {
+    throw new Error(errorMessageHeader);
+  }
+
+  const { isValid: tokenVerified, payload: tokenPayload } = await verifyToken(idToken, signingKey!, projectId);
+
+  if (!tokenVerified) {
+    throw new Error("Token is invalid");
+  }
+
+  const localId = tokenPayload?.sub as string;
+
+  if (checkRevoked === true) {
+    const tokenValidSinceTime = await getTokenValidSinceTime(localId, oauth2Token);
+
+    if (tokenPayload?.iat && tokenValidSinceTime > tokenPayload.iat) {
+      throw new Error("Token is revoked");
     }
+  }
 
-    const {
-      isValid: isValidHeader,
-      errorMessage: errorMessageHeader,
-      signingKey,
-    } = await validateJwtHeader(idToken, kv);
-
-    if (!isValidHeader) {
-      reject(new Error(errorMessageHeader));
-    }
-
-    console.log("signingKey", signingKey);
-    console.log("idToken", idToken);
-    console.log("isValidHeader", isValidHeader);
-
-    const { isValid: tokenVerified, payload: tokenPayload } = await verifyToken(idToken, signingKey!, projectId);
-
-    if (!tokenVerified) {
-      reject(new Error("Token is invalid"));
-    }
-
-    const localId = tokenPayload?.sub as string;
-
-    if (checkRevoked === true) {
-      const tokenValidSinceTime = await getTokenValidSinceTime(localId, oauth2Token);
-
-      if (tokenValidSinceTime > tokenPayload?.iat) {
-        reject(new Error("Token is revoked"));
-      }
-    }
-
-    resolve(tokenPayload as DecodedIdToken);
-  });
+  return tokenPayload as DecodedIdToken;
 }
 
 /**
