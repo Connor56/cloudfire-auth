@@ -88,3 +88,28 @@ export async function deleteUser(localId: string, oauth2Token: string) {
     }),
   });
 }
+
+/**
+ * Gets a user by email from the firebase auth database.
+ * @param email - The email of the user to get.
+ * @param oauth2Token - The OAuth2 token for the Firebase Admin API.
+ * @returns The user data.
+ */
+export async function getUserByEmail(email: string, oauth2Token: string) {
+  const response = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:lookup", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${oauth2Token}`,
+    },
+    body: JSON.stringify({
+      email: [email],
+    }),
+  });
+
+  const data = await response.json();
+
+  console.log("userData", data);
+
+  return data;
+}
