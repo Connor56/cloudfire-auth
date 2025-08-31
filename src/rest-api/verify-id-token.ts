@@ -2,28 +2,111 @@ import type { DecodedIdToken } from "../types.js";
 import { decodeJwt, decodeProtectedHeader, importX509, jwtVerify } from "jose";
 
 /**
- * Verifies a Firebase ID token (JWT). If the token is valid, the promise is
- * fulfilled with the token's decoded claims; otherwise, the promise is
- * rejected.
+ * Verifies a Firebase ID token (JWT) and returns its decoded claims.
  *
- * If `checkRevoked` is set to true, first verifies whether the corresponding
- * user is disabled. If yes, an `auth/user-disabled` error is thrown. If no,
- * verifies if the session corresponding to the ID token was revoked. If the
- * corresponding user's session was invalidated, an `auth/id-token-revoked`
- * error is thrown. If not specified the check is not applied.
+ * This function performs comprehensive validation of Firebase ID tokens including:
+ * - JWT structure and format validation
+ * - Cryptographic signature verification using Google's public keys
+ * - Firebase-specific claim validation (audience, issuer, timing)
+ * - Optional revocation status checking
  *
- * See {@link https://firebase.google.com/docs/auth/admin/verify-id-tokens | Verify ID Tokens}
- * for code samples and detailed documentation.
+ * The verification process follows Firebase's recommended security practices:
+ * 1. Validates JWT body claims (aud, iss, sub, exp, iat, auth_time)
+ * 2. Validates JWT header (algorithm RS256, key ID)
+ * 3. Fetches and caches Google's signing keys from their public API
+ * 4. Verifies cryptographic signature using the appropriate public key
+ * 5. Optionally checks if the user's tokens have been revoked
  *
- * @param idToken - The ID token to verify.
- * @param checkRevoked - Whether to check if the ID token was revoked.
- *   This requires an extra request to the Firebase Auth backend to check
- *   the `tokensValidAfterTime` time for the corresponding user.
- *   When not specified, this additional check is not applied.
+ * **Key Features:**
+ * - Automatic public key fetching and caching (when KV namespace provided)
+ * - Proper error handling with descriptive error messages
+ * - Support for revocation checking via Firebase Admin API
+ * - Network error resilience
  *
- * @returns A promise fulfilled with the
- *   token's decoded claims if the ID token is valid; otherwise, a rejected
- *   promise.
+ * **Security Validations:**
+ * - Ensures token audience matches the provided project ID
+ * - Verifies token was issued by Firebase (`https://securetoken.google.com/{projectId}`)
+ * - Checks token hasn't expired and wasn't issued in the future
+ * - Validates authentication time is not in the future
+ * - Ensures subject (user ID) is a non-empty string
+ * - Confirms token uses RS256 algorithm (not vulnerable algorithms)
+ *
+ * **Performance Optimizations:**
+ * - Caches Google public keys in KV storage to avoid repeated API calls
+ * - Respects cache headers from Google's key endpoint
+ * - Fails fast on basic validation errors before expensive crypto operations
+ *
+ * @param idToken - The Firebase ID token (JWT) to verify. Must be a valid JWT string.
+ * @param projectId - Your Firebase project ID. Used to validate token audience and issuer.
+ * @param oauth2Token - OAuth2 access token for Firebase Admin API. Required for revocation checks.
+ * @param kv - Optional Cloudflare KV namespace for caching Google's public keys.
+ *             Improves performance by avoiding repeated key fetches.
+ * @param checkRevoked - Whether to check if the token has been revoked by comparing
+ *                      against the user's `tokensValidAfterTime`. Requires an additional
+ *                      API call to Firebase Admin API.
+ *
+ * @returns A Promise that resolves to the decoded ID token containing user claims
+ *          and Firebase-specific metadata. The returned object includes standard
+ *          JWT claims (iss, aud, exp, iat, sub) plus Firebase-specific claims
+ *          (email, email_verified, firebase, etc.).
+ *
+ * @throws {Error} When token validation fails:
+ *   - "Token audience does not match project ID" - Wrong project ID
+ *   - "Token issuer does not match project ID" - Not issued by Firebase
+ *   - "Token expiration date is in the past" - Expired token
+ *   - "Token issued at date is in the future" - Clock skew or forged token
+ *   - "Token subject is empty" - Missing or invalid user ID
+ *   - "Token algorithm is not RS256" - Unsafe algorithm
+ *   - "Token key ID is not in the Google API" - Unknown or rotated key
+ *   - "Token is invalid" - Signature verification failed
+ *   - "Token is revoked" - User tokens were revoked (when checkRevoked=true)
+ *   - Network errors when fetching Google's public keys or checking revocation
+ *
+ * @example
+ * ```typescript
+ * // Basic token verification
+ * const decodedToken = await verifyIdTokenHandler(
+ *   idToken,
+ *   "my-project-id",
+ *   oauth2Token
+ * );
+ * console.log("User ID:", decodedToken.uid);
+ * console.log("Email:", decodedToken.email);
+ *
+ * // With caching and revocation checking
+ * const decodedToken = await verifyIdTokenHandler(
+ *   idToken,
+ *   "my-project-id",
+ *   oauth2Token,
+ *   kvNamespace,     // Enables key caching
+ *   true            // Check if token was revoked
+ * );
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Error handling
+ * try {
+ *   const decodedToken = await verifyIdTokenHandler(idToken, projectId, oauth2Token);
+ *   // Token is valid, proceed with authenticated request
+ *   return processAuthenticatedRequest(decodedToken);
+ * } catch (error) {
+ *   if (error.message.includes('expired')) {
+ *     return { error: 'Please log in again' };
+ *   } else if (error.message.includes('revoked')) {
+ *     return { error: 'Access has been revoked' };
+ *   } else {
+ *     return { error: 'Invalid token' };
+ *   }
+ * }
+ * ```
+ *
+ * @see {@link https://firebase.google.com/docs/auth/admin/verify-id-tokens Firebase Admin SDK Token Verification}
+ * @see {@link https://tools.ietf.org/html/rfc7519 JWT RFC 7519}
+ * @see {@link https://firebase.google.com/docs/reference/admin/node/firebase-admin.auth.auth.md#authverifyidtoken Firebase verifyIdToken Reference}
+ *
+ * @since 1.0.0
+ * @package
  */
 export async function verifyIdTokenHandler(
   idToken: string,
