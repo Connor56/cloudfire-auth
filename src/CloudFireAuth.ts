@@ -277,7 +277,8 @@ export class CloudFireAuth {
    *   successfully.
    */
   async setCustomUserClaims(uid: string, customUserClaims: object | null): Promise<void> {
-    await setCustomUserClaimsHandler(uid, customUserClaims);
+    const oauth2Token = await this.getOauth2AccessToken();
+    await setCustomUserClaimsHandler(uid, customUserClaims, oauth2Token);
   }
   /**
    * Revokes all refresh tokens for an existing user.
