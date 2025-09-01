@@ -251,7 +251,8 @@ export class CloudFireAuth {
    *   updated user data.
    */
   async updateUser(uid: string, properties: UpdateRequest): Promise<UserRecord> {
-    return await updateUserHandler(uid, properties);
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await updateUserHandler(uid, properties, oauth2Token);
   }
   /**
    * Sets additional developer claims on an existing user identified by the
