@@ -14,6 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * Alterations to Firebase Admin SDK Code
+ *
+ * The code covered by the above notice in this file are the method names inside of
+ * the CloudFireAuth class and their corresponding doc headers. The code inside each
+ * of the methods is under the MIT License attached to this project.
+ *
+ * Furthermore the following class methods and their doc headers are also under the MIT
+ * license:
+ *
+ * - getOauth2AccessToken
+ *
+ */
 import type {
   DecodedIdToken,
   UserRecord,
