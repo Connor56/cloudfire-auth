@@ -1,12 +1,28 @@
-import type { UpdateRequest, UserRecord } from "../types.js";
+import type { UpdateRequest, UserRecord, SetAccountInfoResponse } from "../types.js";
+import { getUserHandler } from "./get-user.js";
+
+const deletableAttributes = {
+  displayName: "DISPLAY_NAME",
+  photoURL: "PHOTO_URL",
+  // TODO: Decide if these should be deletable too, they're not in firebase admin SDK
+  // You can see the attributes they allow you to delete here:
+  // https://github.com/firebase/firebase-admin-node/blob/master/src/auth/auth-api-request.ts#L1420
+  // email: "EMAIL",
+  // phoneNumber: "PHONE_NUMBER",
+  // provider: "PROVIDER",
+  // password: "PASSWORD",
+  // rawUserInfo: "RAW_USER_INFO",
+};
 
 /**
- * Updates an existing Firebase Auth user with the specified properties.
+ * Updates an existing Firebase Auth user with the specified properties and returns the complete updated user record.
  *
- * This function provides comprehensive user management capabilities by validating
- * the update request and making a direct call to the Firebase Admin API's
- * accounts:update endpoint. All properties are validated before the API call
- * to ensure data integrity and prevent invalid requests.
+ * This function provides comprehensive user management capabilities through a two-step process:
+ * 1. **Validation & Update**: Validates the update request and calls Firebase Admin API's accounts:update endpoint
+ * 2. **Data Retrieval**: Fetches the complete updated user record using getUserHandler for consistency
+ *
+ * This approach ensures you receive a complete, properly formatted UserRecord with all user data
+ * including custom claims, metadata, provider information, and any computed fields.
  *
  * **Supported Update Operations:**
  * - **Profile Information**: displayName, photoURL
@@ -24,13 +40,16 @@ import type { UpdateRequest, UserRecord } from "../types.js";
  * - Null values allowed for clearable fields (displayName, phoneNumber, photoURL)
  *
  * **Firebase API Integration:**
- * - Uses Firebase Admin API's `accounts:update` endpoint
- * - Requires valid OAuth2 access token with admin privileges
- * - Transforms provider operations to Firebase API format automatically
+ * - **Step 1**: Uses Firebase Admin API's `accounts:update` endpoint to apply changes
+ *   - Transforms fields to Firebase API format automatically
  *   - `providerToLink` becomes `linkProviderUserInfo`
  *   - `providersToUnlink` becomes `deleteProvider`
- * - Handles Firebase response format `{ users: [UserRecord] }` and extracts single user
- * - Returns the updated user data from Firebase's response
+ *   - `photoURL` becomes `photoUrl` (lowercase 'u')
+ *   - Validates update response for consistency
+ * - **Step 2**: Uses `getUserHandler` to retrieve complete updated user data
+ *   - Ensures consistent UserRecord format across the application
+ *   - Includes all user metadata, custom claims, and provider information
+ *   - Handles complex data transformations automatically
  *
  * @param uid - The Firebase Auth user ID (localId) to update.
  *              Must be a valid, existing Firebase user identifier.
@@ -39,17 +58,23 @@ import type { UpdateRequest, UserRecord } from "../types.js";
  * @param oauth2AccessToken - Valid OAuth2 access token with Firebase Admin API privileges.
  *                           Obtained via service account authentication.
  *
- * @returns Promise that resolves to the updated UserRecord from Firebase.
+ * @returns Promise that resolves to the complete updated UserRecord with all user data.
+ *          The returned UserRecord includes updated fields plus all existing user information
+ *          such as metadata, custom claims, provider data, and computed fields.
  *
- * @throws {Error} When validation or API operations fail:
- *   - "Invalid properties provided: {props}" - Unknown properties in request
- *   - "{field} must be a {type}" - Type validation failures
- *   - "Invalid email format" - Email doesn't match regex pattern
- *   - "password must be at least 6 characters long" - Password too short
- *   - "photoURL must be a valid URL" - URL validation failed
- *   - "Failed to update user: {status} {statusText} - {details}" - Firebase API errors with detailed messages
- *   - "Invalid response from Firebase API - no user data returned" - Unexpected response format
- *   - Network errors during Firebase API communication
+ * @throws {Error} When validation, update, or retrieval operations fail:
+ *   - **Validation Errors**:
+ *     - "Invalid properties provided: {props}" - Unknown properties in request
+ *     - "{field} must be a {type}" - Type validation failures
+ *     - "Invalid email format" - Email doesn't match regex pattern
+ *     - "password must be at least 6 characters long" - Password too short
+ *     - "photoURL must be a valid URL" - URL validation failed
+ *   - **Update API Errors**:
+ *     - "Failed to update user: {status} {statusText}\n{details}" - Firebase API errors with detailed error information
+ *     - "Invalid response from Firebase API - user ID mismatch" - Unexpected response format
+ *   - **Retrieval Errors**:
+ *     - "User updated successfully, but failed to retrieve updated data: {reason}" - Update succeeded but data retrieval failed
+ *   - **Network Errors**: Various network-related failures during API communication
  *
  * @example
  * ```typescript
@@ -63,6 +88,13 @@ import type { UpdateRequest, UserRecord } from "../types.js";
  *   oauth2Token
  * );
  *
+ * console.log('Profile updated:', updatedUser.displayName); // "John Doe"
+ * console.log('Photo URL:', updatedUser.photoURL); // "https://example.com/photo.jpg"
+ * console.log('User metadata:', updatedUser.metadata); // Includes creation time, last sign-in, etc.
+ * ```
+ *
+ * @example
+ * ```typescript
  * // Update authentication credentials
  * const userWithNewEmail = await updateUserHandler(
  *   'user456',
@@ -74,25 +106,21 @@ import type { UpdateRequest, UserRecord } from "../types.js";
  *   oauth2Token
  * );
  *
- * // Clear optional fields with null
- * const userWithClearedFields = await updateUserHandler(
- *   'user789',
- *   {
- *     displayName: null,
- *     phoneNumber: null,
- *     photoURL: null
- *   },
- *   oauth2Token
- * );
+ * console.log('Email updated:', userWithNewEmail.email); // "newemail@example.com"
+ * console.log('Email verified:', userWithNewEmail.emailVerified); // false
+ * console.log('Provider data:', userWithNewEmail.providerData); // All linked providers
  * ```
  *
  * @example
  * ```typescript
- * // Provider management
- * const userWithProvider = await updateUserHandler(
- *   'user123',
+ * // Clear optional fields with null and manage providers
+ * const userWithProviderChanges = await updateUserHandler(
+ *   'user789',
  *   {
- *     providerToLink: {
+ *     displayName: null, // Clear display name
+ *     phoneNumber: null, // Clear phone number
+ *     providersToUnlink: ['facebook.com'], // Remove Facebook provider
+ *     providerToLink: { // Link new Google provider
  *       providerId: 'google.com',
  *       uid: 'google-uid-12345'
  *     }
@@ -100,51 +128,63 @@ import type { UpdateRequest, UserRecord } from "../types.js";
  *   oauth2Token
  * );
  *
- * // Remove providers
- * const userWithoutProviders = await updateUserHandler(
- *   'user456',
- *   {
- *     providersToUnlink: ['facebook.com', 'twitter.com']
- *   },
- *   oauth2Token
- * );
+ * console.log('Display name cleared:', userWithProviderChanges.displayName); // null
+ * console.log('Updated providers:', userWithProviderChanges.providerData); // Reflects provider changes
  * ```
  *
  * @example
  * ```typescript
- * // Error handling
+ * // Comprehensive error handling
  * try {
  *   const updatedUser = await updateUserHandler(userId, updates, oauth2Token);
  *   console.log('User updated successfully:', updatedUser.uid);
+ *
+ *   // The returned user includes all data - you can access any field
+ *   console.log('Custom claims:', updatedUser.customClaims);
+ *   console.log('Last sign-in:', updatedUser.metadata.lastSignInTime);
+ *   console.log('All providers:', updatedUser.providerData);
+ *
  * } catch (error) {
  *   if (error.message.includes('Invalid properties provided')) {
- *     console.error('Unknown properties in request:', error.message);
- *   } else if (error.message.includes('Invalid email format')) {
- *     console.error('Please provide a valid email address');
+ *     console.error('Request validation failed:', error.message);
  *   } else if (error.message.includes('Failed to update user')) {
- *     console.error('Firebase API error with details:', error.message);
- *   } else if (error.message.includes('Invalid response from Firebase API')) {
- *     console.error('Unexpected Firebase response format:', error.message);
+ *     console.error('Firebase update API error:', error.message);
+ *   } else if (error.message.includes('User updated successfully, but failed to retrieve')) {
+ *     console.error('Update succeeded but data retrieval failed:', error.message);
+ *     // User was updated, but we couldn't get the fresh data
  *   } else {
  *     console.error('Unexpected error:', error);
  *   }
  * }
  * ```
  *
- * **Important Notes:**
- * - Updates are atomic - either all succeed or none are applied
- * - Password updates may invalidate existing user sessions
- * - Email updates should be followed by verification flows
- * - Phone number validation is currently disabled (see TODO in validation)
- * - Provider operations are automatically transformed to Firebase API format
- * - Multi-factor and provider operations affect available authentication methods
- * - Disabled users cannot sign in until re-enabled
- * - Response format is standardized to return single UserRecord (extracted from Firebase's array format)
+ * **Important Implementation Notes:**
+ * - **Two-Step Process**: Function performs update then retrieval for complete data consistency
+ * - **Atomic Updates**: Firebase update operations are atomic - either all succeed or none are applied
+ * - **Complete Data**: Always returns full UserRecord with metadata, claims, providers, etc.
+ * - **Consistency**: Uses same data formatting as getUserHandler for uniform API responses
+ * - **Error Recovery**: Clear error messages distinguish between update and retrieval failures
+ * - **Field Transformations**: Automatically handles Firebase API format differences (providers, photoURL)
+ * - **Session Impact**: Password updates may invalidate existing user sessions
+ * - **Email Verification**: Email updates should be followed by verification flows
+ * - **Performance**: Makes two API calls but ensures data completeness and consistency
  *
- * @see {@link checkUpdateUserRequest} For detailed validation rules
+ * **Security Considerations:**
+ * - Requires Firebase Admin API privileges via OAuth2 token
+ * - Validates all input properties before making API calls
+ * - Disabled users cannot sign in until re-enabled
+ * - Provider operations affect available authentication methods
+ * - Phone number validation is currently minimal (see TODO in validation)
+ *
+ * TODO: It appears there are still parts that require implementation:
+ * https://github.com/firebase/firebase-admin-node/blob/master/src/auth/auth-api-request.ts#L1371
+ *
+ * @see {@link checkUpdateUserRequest} For detailed validation rules and allowed properties
+ * @see {@link getUserHandler} For the data retrieval implementation used in step 2
  * @see {@link https://firebase.google.com/docs/auth/admin/manage-users Firebase User Management}
  * @see {@link https://firebase.google.com/docs/reference/rest/auth#section-update-account Firebase REST API}
  *
+ * @package
  * @since 1.0.0
  */
 export async function updateUserHandler(
@@ -154,11 +194,30 @@ export async function updateUserHandler(
 ): Promise<UserRecord> {
   const validProperties = checkUpdateUserRequest(properties);
 
+  if (typeof uid !== "string" || uid.length === 0) {
+    throw new Error("uid must be a non-empty string, got: " + uid);
+  }
+
   // Transform provider operations to Firebase API format
   const requestBody: any = {
     ...validProperties,
     localId: uid,
   };
+
+  // Handle deletable attributes
+  requestBody.deleteAttribute = [];
+  for (const key in deletableAttributes) {
+    if (validProperties[key as keyof UpdateRequest] === null) {
+      requestBody.deleteAttribute.push(deletableAttributes[key as keyof typeof deletableAttributes]);
+
+      delete requestBody[key];
+    }
+  }
+
+  // Remove deleteAttribute if it's empty
+  if (requestBody.deleteAttribute.length === 0) {
+    delete requestBody.deleteAttribute;
+  }
 
   // Handle provider linking transformation
   if (validProperties.providerToLink) {
@@ -170,6 +229,24 @@ export async function updateUserHandler(
   if (validProperties.providersToUnlink) {
     requestBody.deleteProvider = validProperties.providersToUnlink;
     delete requestBody.providersToUnlink;
+  }
+
+  // Transform photoURL to photoUrl for Firebase API
+  if (requestBody.photoURL !== undefined) {
+    requestBody.photoUrl = requestBody.photoURL;
+    delete requestBody.photoURL;
+  }
+
+  // Transform disabled to disableUser
+  if (validProperties.disabled !== undefined) {
+    requestBody.disableUser = validProperties.disabled;
+    delete requestBody.disabled;
+  }
+
+  // Transform phoneNumber into a provider deletion if it's set to null
+  if (requestBody.phoneNumber === null) {
+    requestBody.deleteProvider ? requestBody.deleteProvider.push("phone") : (requestBody.deleteProvider = ["phone"]);
+    delete requestBody.phoneNumber;
   }
 
   const response = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:update", {
@@ -186,11 +263,8 @@ export async function updateUserHandler(
     let errorMessage: string;
 
     try {
-      console.log("errorText", errorText);
       const errorData = JSON.parse(errorText);
-
       const formattedErrorText = JSON.stringify(errorData, null, 2);
-
       errorMessage = `Failed to update user: ${response.status} ${response.statusText}\n${formattedErrorText}`;
     } catch {
       errorMessage = `Failed to update user: ${response.status} ${response.statusText} - ${errorText}`;
@@ -199,15 +273,20 @@ export async function updateUserHandler(
     throw new Error(errorMessage);
   }
 
-  const data = (await response.json()) as { users?: UserRecord[] };
+  const data = (await response.json()) as SetAccountInfoResponse;
 
-  // Firebase returns { users: [UserRecord] }, extract the single user
-  if (data.users && Array.isArray(data.users) && data.users.length > 0) {
-    return data.users[0]!;
+  if (data.localId !== uid) {
+    throw new Error("Invalid response from Firebase API - user ID mismatch");
   }
 
-  // Fallback for unexpected response format
-  throw new Error("Invalid response from Firebase API - no user data returned");
+  // Retrieve the complete updated user record
+  try {
+    const updatedUserRecord = await getUserHandler(uid, oauth2AccessToken);
+
+    return updatedUserRecord;
+  } catch (error) {
+    throw new Error(`User updated successfully, but failed to retrieve updated data: ${(error as Error).message}`);
+  }
 }
 
 /**
@@ -233,6 +312,10 @@ function checkUpdateUserRequest(properties: UpdateRequest): UpdateRequest {
     "providerToLink",
     "providersToUnlink",
   ];
+
+  if (Object.keys(properties).length === 0) {
+    throw new Error("Request body is empty. Please provide at least one property to update.");
+  }
 
   // Check that only allowed properties are present
   const providedProperties = Object.keys(properties);
