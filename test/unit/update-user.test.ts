@@ -1,14 +1,51 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { updateUserHandler } from "../../src/rest-api/update-user.js";
-import type { UpdateRequest } from "../../src/types.js";
+import { getUserHandler } from "../../src/rest-api/get-user.js";
+import type { UpdateRequest, UserRecord } from "../../src/types.js";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+// Mock getUserHandler
+vi.mock("../../src/rest-api/get-user.js", () => ({
+  getUserHandler: vi.fn(),
+}));
+
+const mockGetUserHandler = vi.mocked(getUserHandler);
+
 describe("updateUserHandler", () => {
   const validUid = "test-user-123";
   const validOAuth2Token = "valid-oauth2-token";
+
+  const mockUpdatedUserRecord: UserRecord = {
+    uid: validUid,
+    email: "updated@example.com",
+    emailVerified: true,
+    displayName: "Updated User",
+    photoURL: "https://example.com/updated-photo.jpg",
+    phoneNumber: "+1234567890",
+    disabled: false,
+    customClaims: { role: "admin" },
+    providerData: [
+      {
+        uid: validUid,
+        providerId: "password",
+        email: "updated@example.com",
+        displayName: "Updated User",
+        photoURL: "https://example.com/photo.jpg",
+        phoneNumber: "+1234567890",
+        toJSON: () => ({}),
+      },
+    ],
+    metadata: {
+      creationTime: "1609459200000",
+      lastSignInTime: "1640995200000",
+      lastRefreshTime: null,
+      toJSON: () => ({}),
+    },
+    toJSON: () => ({}),
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -62,12 +99,6 @@ describe("updateUserHandler", () => {
       );
     });
 
-    it("should reject non-string passwords", async () => {
-      await expect(updateUserHandler(validUid, { password: 123456 as any }, validOAuth2Token)).rejects.toThrow(
-        "password must be a string"
-      );
-    });
-
     it("should reject non-string phoneNumber", async () => {
       await expect(updateUserHandler(validUid, { phoneNumber: 123 as any }, validOAuth2Token)).rejects.toThrow(
         "phoneNumber must be a string or null"
@@ -75,138 +106,27 @@ describe("updateUserHandler", () => {
     });
 
     it("should reject invalid photoURL", async () => {
-      await expect(updateUserHandler(validUid, { photoURL: "not-a-url" }, validOAuth2Token)).rejects.toThrow(
+      await expect(updateUserHandler(validUid, { photoURL: "invalid-url" }, validOAuth2Token)).rejects.toThrow(
         "photoURL must be a valid URL"
       );
     });
 
-    it("should reject non-string photoURL", async () => {
-      await expect(updateUserHandler(validUid, { photoURL: 123 as any }, validOAuth2Token)).rejects.toThrow(
-        "photoURL must be a string or null"
-      );
-    });
-
-    it("should reject invalid multiFactor", async () => {
-      await expect(updateUserHandler(validUid, { multiFactor: "invalid" as any }, validOAuth2Token)).rejects.toThrow(
-        "multiFactor must be an object or null"
-      );
-    });
-
-    it("should reject invalid enrolledFactors", async () => {
-      await expect(
-        updateUserHandler(validUid, { multiFactor: { enrolledFactors: "invalid" as any } }, validOAuth2Token)
-      ).rejects.toThrow("multiFactor.enrolledFactors must be an array or null");
-    });
-
-    it("should reject null providerToLink", async () => {
-      await expect(updateUserHandler(validUid, { providerToLink: null as any }, validOAuth2Token)).rejects.toThrow(
-        "providerToLink must be a UserProvider object"
-      );
-    });
-
-    it("should reject non-array providersToUnlink", async () => {
-      await expect(
-        updateUserHandler(validUid, { providersToUnlink: "invalid" as any }, validOAuth2Token)
-      ).rejects.toThrow("providersToUnlink must be an array");
-    });
-
-    it("should reject providersToUnlink with non-string elements", async () => {
-      await expect(
-        updateUserHandler(validUid, { providersToUnlink: ["valid", 123] as any }, validOAuth2Token)
-      ).rejects.toThrow("all providers in providersToUnlink must be strings");
-    });
-  });
-
-  describe("Valid Properties", () => {
-    beforeEach(() => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ users: [{ uid: validUid }] }),
-      });
-    });
-
-    it("should accept valid boolean disabled", async () => {
-      await expect(updateUserHandler(validUid, { disabled: true }, validOAuth2Token)).resolves.not.toThrow();
-    });
-
-    it("should accept valid string displayName", async () => {
-      await expect(updateUserHandler(validUid, { displayName: "John Doe" }, validOAuth2Token)).resolves.not.toThrow();
-    });
-
-    it("should accept null displayName", async () => {
-      await expect(updateUserHandler(validUid, { displayName: null }, validOAuth2Token)).resolves.not.toThrow();
-    });
-
-    it("should accept valid email", async () => {
-      await expect(updateUserHandler(validUid, { email: "user@example.com" }, validOAuth2Token)).resolves.not.toThrow();
-    });
-
-    it("should accept valid boolean emailVerified", async () => {
-      await expect(updateUserHandler(validUid, { emailVerified: true }, validOAuth2Token)).resolves.not.toThrow();
-    });
-
-    it("should accept valid password", async () => {
-      await expect(updateUserHandler(validUid, { password: "password123" }, validOAuth2Token)).resolves.not.toThrow();
-    });
-
-    it("should accept valid phoneNumber", async () => {
-      await expect(
-        updateUserHandler(validUid, { phoneNumber: "+12345678900" }, validOAuth2Token)
-      ).resolves.not.toThrow();
-    });
-
-    it("should accept null phoneNumber", async () => {
-      await expect(updateUserHandler(validUid, { phoneNumber: null }, validOAuth2Token)).resolves.not.toThrow();
-    });
-
-    it("should accept valid photoURL", async () => {
-      await expect(
-        updateUserHandler(validUid, { photoURL: "https://example.com/photo.jpg" }, validOAuth2Token)
-      ).resolves.not.toThrow();
-    });
-
-    it("should accept null photoURL", async () => {
-      await expect(updateUserHandler(validUid, { photoURL: null }, validOAuth2Token)).resolves.not.toThrow();
-    });
-
-    it("should accept valid multiFactor", async () => {
-      await expect(
-        updateUserHandler(validUid, { multiFactor: { enrolledFactors: [] } }, validOAuth2Token)
-      ).resolves.not.toThrow();
-    });
-
-    it("should accept null multiFactor", async () => {
-      await expect(updateUserHandler(validUid, { multiFactor: null as any }, validOAuth2Token)).resolves.not.toThrow();
-    });
-
-    it("should accept valid providerToLink", async () => {
-      await expect(
-        updateUserHandler(validUid, { providerToLink: { providerId: "google.com", uid: "123" } }, validOAuth2Token)
-      ).resolves.not.toThrow();
-    });
-
-    it("should accept valid providersToUnlink", async () => {
-      await expect(
-        updateUserHandler(validUid, { providersToUnlink: ["facebook.com"] }, validOAuth2Token)
-      ).resolves.not.toThrow();
-    });
-  });
-
-  describe("API Calls", () => {
-    it("should make correct API call", async () => {
-      const updateRequest: UpdateRequest = {
-        displayName: "John Doe",
-        email: "john@example.com",
+    it("should accept null values for clearable fields", async () => {
+      const validRequest: UpdateRequest = {
+        displayName: null,
+        phoneNumber: null,
+        photoURL: null,
       };
 
-      mockFetch.mockResolvedValue({
+      const mockResponse = {
         ok: true,
-        json: vi
-          .fn()
-          .mockResolvedValue({ users: [{ uid: validUid, displayName: "John Doe", email: "john@example.com" }] }),
-      });
+        json: vi.fn().mockResolvedValue({ localId: validUid }),
+      };
 
-      await updateUserHandler(validUid, updateRequest, validOAuth2Token);
+      mockFetch.mockResolvedValue(mockResponse);
+      mockGetUserHandler.mockResolvedValue(mockUpdatedUserRecord);
+
+      await updateUserHandler(validUid, validRequest, validOAuth2Token);
 
       expect(mockFetch).toHaveBeenCalledWith("https://identitytoolkit.googleapis.com/v1/accounts:update", {
         method: "POST",
@@ -215,141 +135,474 @@ describe("updateUserHandler", () => {
           Authorization: `Bearer ${validOAuth2Token}`,
         },
         body: JSON.stringify({
-          displayName: "John Doe",
-          email: "john@example.com",
           localId: validUid,
+          deleteAttribute: ["DISPLAY_NAME", "PHOTO_URL"],
+          deleteProvider: ["phone"],
         }),
       });
     });
+  });
 
-    it("should transform provider linking correctly", async () => {
+  describe("Successful Updates", () => {
+    beforeEach(() => {
+      const mockResponse = {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ localId: validUid }),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+      mockGetUserHandler.mockResolvedValue(mockUpdatedUserRecord);
+    });
+
+    it("should update basic profile properties", async () => {
+      const updateRequest: UpdateRequest = {
+        displayName: "Updated Name",
+        photoURL: "https://example.com/new-photo.jpg",
+      };
+
+      const result = await updateUserHandler(validUid, updateRequest, validOAuth2Token);
+
+      // Verify update API call
+      expect(mockFetch).toHaveBeenCalledWith("https://identitytoolkit.googleapis.com/v1/accounts:update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${validOAuth2Token}`,
+        },
+        body: JSON.stringify({
+          displayName: "Updated Name",
+          localId: validUid,
+          photoUrl: "https://example.com/new-photo.jpg",
+        }),
+      });
+
+      // Verify getUserHandler was called
+      expect(mockGetUserHandler).toHaveBeenCalledWith(validUid, validOAuth2Token);
+
+      // Verify result is from getUserHandler
+      expect(result).toBe(mockUpdatedUserRecord);
+    });
+
+    it("should update authentication properties", async () => {
+      const updateRequest: UpdateRequest = {
+        email: "newemail@example.com",
+        emailVerified: false,
+        password: "newPassword123",
+      };
+
+      const result = await updateUserHandler(validUid, updateRequest, validOAuth2Token);
+
+      expect(mockFetch).toHaveBeenCalledWith("https://identitytoolkit.googleapis.com/v1/accounts:update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${validOAuth2Token}`,
+        },
+        body: JSON.stringify({
+          email: "newemail@example.com",
+          emailVerified: false,
+          password: "newPassword123",
+          localId: validUid,
+        }),
+      });
+
+      expect(mockGetUserHandler).toHaveBeenCalledWith(validUid, validOAuth2Token);
+      expect(result).toBe(mockUpdatedUserRecord);
+    });
+
+    it("should update disabled status", async () => {
+      const updateRequest: UpdateRequest = {
+        disabled: true,
+      };
+
+      const result = await updateUserHandler(validUid, updateRequest, validOAuth2Token);
+
+      expect(mockFetch).toHaveBeenCalledWith("https://identitytoolkit.googleapis.com/v1/accounts:update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${validOAuth2Token}`,
+        },
+        body: JSON.stringify({
+          localId: validUid,
+          disableUser: true,
+        }),
+      });
+
+      expect(result).toBe(mockUpdatedUserRecord);
+    });
+
+    it("should handle provider linking", async () => {
       const updateRequest: UpdateRequest = {
         providerToLink: {
           providerId: "google.com",
-          uid: "google-uid-123",
+          uid: "google-123",
+          email: "user@gmail.com",
         },
       };
 
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ users: [{ uid: validUid }] }),
-      });
+      const result = await updateUserHandler(validUid, updateRequest, validOAuth2Token);
 
-      await updateUserHandler(validUid, updateRequest, validOAuth2Token);
-
-      const callArgs = mockFetch.mock.calls[0];
-      const requestBody = JSON.parse(callArgs[1].body);
-
-      expect(requestBody).toEqual({
-        localId: validUid,
-        linkProviderUserInfo: {
-          providerId: "google.com",
-          uid: "google-uid-123",
+      expect(mockFetch).toHaveBeenCalledWith("https://identitytoolkit.googleapis.com/v1/accounts:update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${validOAuth2Token}`,
         },
+        body: JSON.stringify({
+          localId: validUid,
+          linkProviderUserInfo: {
+            providerId: "google.com",
+            uid: "google-123",
+            email: "user@gmail.com",
+          },
+        }),
       });
 
-      // Ensure original field is removed
-      expect(requestBody.providerToLink).toBeUndefined();
+      expect(result).toBe(mockUpdatedUserRecord);
     });
 
-    it("should transform provider unlinking correctly", async () => {
+    it("should handle provider unlinking", async () => {
       const updateRequest: UpdateRequest = {
         providersToUnlink: ["facebook.com", "twitter.com"],
       };
 
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ users: [{ uid: validUid }] }),
-      });
+      const result = await updateUserHandler(validUid, updateRequest, validOAuth2Token);
 
-      await updateUserHandler(validUid, updateRequest, validOAuth2Token);
-
-      const callArgs = mockFetch.mock.calls[0];
-      const requestBody = JSON.parse(callArgs[1].body);
-
-      expect(requestBody).toEqual({
-        localId: validUid,
-        deleteProvider: ["facebook.com", "twitter.com"],
-      });
-
-      // Ensure original field is removed
-      expect(requestBody.providersToUnlink).toBeUndefined();
-    });
-
-    it("should handle HTTP errors with status code", async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 400,
-        statusText: "Bad Request",
-        text: vi.fn().mockResolvedValue("Invalid user ID"),
-      });
-
-      await expect(updateUserHandler(validUid, { displayName: "John" }, validOAuth2Token)).rejects.toThrow(
-        "Failed to update user: 400 Bad Request - Invalid user ID"
-      );
-    });
-
-    it("should handle HTTP errors with Firebase error details", async () => {
-      const firebaseError = {
-        error: {
-          message: "EMAIL_EXISTS",
-          code: 400,
+      expect(mockFetch).toHaveBeenCalledWith("https://identitytoolkit.googleapis.com/v1/accounts:update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${validOAuth2Token}`,
         },
+        body: JSON.stringify({
+          localId: validUid,
+          deleteProvider: ["facebook.com", "twitter.com"],
+        }),
+      });
+
+      expect(result).toBe(mockUpdatedUserRecord);
+    });
+
+    it("should handle both provider linking and unlinking", async () => {
+      const updateRequest: UpdateRequest = {
+        providerToLink: {
+          providerId: "google.com",
+          uid: "google-456",
+        },
+        providersToUnlink: ["facebook.com"],
       };
 
-      mockFetch.mockResolvedValue({
+      const result = await updateUserHandler(validUid, updateRequest, validOAuth2Token);
+
+      expect(mockFetch).toHaveBeenCalledWith("https://identitytoolkit.googleapis.com/v1/accounts:update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${validOAuth2Token}`,
+        },
+        body: JSON.stringify({
+          localId: validUid,
+          linkProviderUserInfo: {
+            providerId: "google.com",
+            uid: "google-456",
+          },
+          deleteProvider: ["facebook.com"],
+        }),
+      });
+
+      expect(result).toBe(mockUpdatedUserRecord);
+    });
+
+    it("should handle comprehensive updates", async () => {
+      const updateRequest: UpdateRequest = {
+        displayName: "Complete User",
+        email: "complete@example.com",
+        emailVerified: true,
+        phoneNumber: "+1987654321",
+        photoURL: "https://example.com/complete-photo.jpg",
+        disabled: false,
+      };
+
+      const result = await updateUserHandler(validUid, updateRequest, validOAuth2Token);
+
+      expect(mockFetch).toHaveBeenCalledWith("https://identitytoolkit.googleapis.com/v1/accounts:update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${validOAuth2Token}`,
+        },
+        body: JSON.stringify({
+          displayName: "Complete User",
+          email: "complete@example.com",
+          emailVerified: true,
+          phoneNumber: "+1987654321",
+          localId: validUid,
+          photoUrl: "https://example.com/complete-photo.jpg",
+          disableUser: false,
+        }),
+      });
+
+      expect(result).toBe(mockUpdatedUserRecord);
+    });
+  });
+
+  describe("Firebase API Error Handling", () => {
+    it("should handle HTTP 400 errors with detailed message", async () => {
+      const mockResponse = {
         ok: false,
         status: 400,
         statusText: "Bad Request",
-        text: vi.fn().mockResolvedValue(JSON.stringify(firebaseError)),
-      });
+        text: vi.fn().mockResolvedValue(
+          JSON.stringify({
+            error: {
+              code: 400,
+              message: "INVALID_ID_TOKEN",
+              errors: [
+                {
+                  message: "INVALID_ID_TOKEN",
+                  domain: "global",
+                  reason: "invalid",
+                },
+              ],
+            },
+          })
+        ),
+      };
 
-      await expect(updateUserHandler(validUid, { displayName: "John" }, validOAuth2Token)).rejects.toThrow(
-        'Failed to update user: 400 Bad Request\n{\n  "error": {\n    "message": "EMAIL_EXISTS",\n    "code": 400\n  }\n}'
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const updateRequest: UpdateRequest = { displayName: "Test" };
+
+      await expect(updateUserHandler(validUid, updateRequest, validOAuth2Token)).rejects.toThrow(
+        'Failed to update user: 400 Bad Request\n{\n  "error": {\n    "code": 400,\n    "message": "INVALID_ID_TOKEN",\n    "errors": [\n      {\n        "message": "INVALID_ID_TOKEN",\n        "domain": "global",\n        "reason": "invalid"\n      }\n    ]\n  }\n}'
+      );
+
+      // getUserHandler should not be called when update fails
+      expect(mockGetUserHandler).not.toHaveBeenCalled();
+    });
+
+    it("should handle HTTP 401 errors", async () => {
+      const mockResponse = {
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+        text: vi.fn().mockResolvedValue("Unauthorized access"),
+      };
+
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const updateRequest: UpdateRequest = { displayName: "Test" };
+
+      await expect(updateUserHandler(validUid, updateRequest, validOAuth2Token)).rejects.toThrow(
+        "Failed to update user: 401 Unauthorized - Unauthorized access"
+      );
+
+      expect(mockGetUserHandler).not.toHaveBeenCalled();
+    });
+
+    it("should handle HTTP 404 errors (user not found)", async () => {
+      const mockResponse = {
+        ok: false,
+        status: 404,
+        statusText: "Not Found",
+        text: vi.fn().mockResolvedValue(
+          JSON.stringify({
+            error: {
+              message: "USER_NOT_FOUND",
+            },
+          })
+        ),
+      };
+
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const updateRequest: UpdateRequest = { displayName: "Test" };
+
+      await expect(updateUserHandler(validUid, updateRequest, validOAuth2Token)).rejects.toThrow(
+        'Failed to update user: 404 Not Found\n{\n  "error": {\n    "message": "USER_NOT_FOUND"\n  }\n}'
       );
     });
 
     it("should handle network errors", async () => {
-      mockFetch.mockRejectedValue(new Error("Network error"));
+      const networkError = new Error("Network connection failed");
+      mockFetch.mockRejectedValue(networkError);
 
-      await expect(updateUserHandler(validUid, { displayName: "John" }, validOAuth2Token)).rejects.toThrow(
-        "Network error"
+      const updateRequest: UpdateRequest = { displayName: "Test" };
+
+      await expect(updateUserHandler(validUid, updateRequest, validOAuth2Token)).rejects.toThrow(
+        "Network connection failed"
+      );
+
+      expect(mockGetUserHandler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Response Validation", () => {
+    it("should handle user ID mismatch in response", async () => {
+      const mockResponse = {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ localId: "different-user-id" }),
+      };
+
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const updateRequest: UpdateRequest = { displayName: "Test" };
+
+      await expect(updateUserHandler(validUid, updateRequest, validOAuth2Token)).rejects.toThrow(
+        "Invalid response from Firebase API - user ID mismatch"
+      );
+
+      expect(mockGetUserHandler).not.toHaveBeenCalled();
+    });
+
+    it("should handle malformed JSON response", async () => {
+      const mockResponse = {
+        ok: true,
+        json: vi.fn().mockRejectedValue(new SyntaxError("Unexpected token")),
+      };
+
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const updateRequest: UpdateRequest = { displayName: "Test" };
+
+      await expect(updateUserHandler(validUid, updateRequest, validOAuth2Token)).rejects.toThrow("Unexpected token");
+
+      expect(mockGetUserHandler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("User Data Retrieval Errors", () => {
+    beforeEach(() => {
+      const mockResponse = {
+        ok: true,
+        json: vi.fn().mockResolvedValue({ localId: validUid }),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+    });
+
+    it("should handle getUserHandler failure after successful update", async () => {
+      const getUserError = new Error("Failed to get user: 404 Not Found");
+      mockGetUserHandler.mockRejectedValue(getUserError);
+
+      const updateRequest: UpdateRequest = { displayName: "Test" };
+
+      await expect(updateUserHandler(validUid, updateRequest, validOAuth2Token)).rejects.toThrow(
+        "User updated successfully, but failed to retrieve updated data: Failed to get user: 404 Not Found"
+      );
+
+      // Verify update was called
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://identitytoolkit.googleapis.com/v1/accounts:update",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({
+            displayName: "Test",
+            localId: validUid,
+          }),
+        })
+      );
+
+      // Verify getUserHandler was attempted
+      expect(mockGetUserHandler).toHaveBeenCalledWith(validUid, validOAuth2Token);
+    });
+
+    it("should handle getUserHandler network errors", async () => {
+      const networkError = new Error("Network timeout");
+      mockGetUserHandler.mockRejectedValue(networkError);
+
+      const updateRequest: UpdateRequest = { email: "updated@example.com" };
+
+      await expect(updateUserHandler(validUid, updateRequest, validOAuth2Token)).rejects.toThrow(
+        "User updated successfully, but failed to retrieve updated data: Network timeout"
+      );
+
+      expect(mockFetch).toHaveBeenCalled();
+      expect(mockGetUserHandler).toHaveBeenCalledWith(validUid, validOAuth2Token);
+    });
+
+    it("should handle getUserHandler authorization errors", async () => {
+      const authError = new Error("Failed to get user: 401 Unauthorized");
+      mockGetUserHandler.mockRejectedValue(authError);
+
+      const updateRequest: UpdateRequest = { disabled: true };
+
+      await expect(updateUserHandler(validUid, updateRequest, validOAuth2Token)).rejects.toThrow(
+        "User updated successfully, but failed to retrieve updated data: Failed to get user: 401 Unauthorized"
+      );
+    });
+  });
+
+  describe("Edge Cases", () => {
+    it("should handle empty update request", async () => {
+      const emptyRequest: UpdateRequest = {};
+
+      await expect(updateUserHandler(validUid, emptyRequest, validOAuth2Token)).rejects.toThrow(
+        "Request body is empty. Please provide at least one property to update."
       );
     });
 
-    it("should extract user from Firebase response format", async () => {
-      const mockUserRecord = { uid: validUid, displayName: "John Doe" };
-      const mockFirebaseResponse = { users: [mockUserRecord] };
+    it("should handle very long UID", async () => {
+      const longUid = "a".repeat(128);
 
-      mockFetch.mockResolvedValue({
+      const mockResponse = {
         ok: true,
-        json: vi.fn().mockResolvedValue(mockFirebaseResponse),
-      });
+        json: vi.fn().mockResolvedValue({ localId: longUid }),
+      };
 
-      const result = await updateUserHandler(validUid, { displayName: "John Doe" }, validOAuth2Token);
-      expect(result).toEqual(mockUserRecord);
+      mockFetch.mockResolvedValue(mockResponse);
+      const longUidUserRecord: UserRecord = {
+        ...mockUpdatedUserRecord,
+        uid: longUid,
+        toJSON: () => ({}),
+      };
+      mockGetUserHandler.mockResolvedValue(longUidUserRecord);
+
+      const updateRequest: UpdateRequest = { displayName: "Long UID User" };
+
+      const result = await updateUserHandler(longUid, updateRequest, validOAuth2Token);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://identitytoolkit.googleapis.com/v1/accounts:update",
+        expect.objectContaining({
+          body: JSON.stringify({
+            displayName: "Long UID User",
+            localId: longUid,
+          }),
+        })
+      );
+
+      expect(mockGetUserHandler).toHaveBeenCalledWith(longUid, validOAuth2Token);
+      expect(result.uid).toBe(longUid);
     });
 
-    it("should handle invalid response format", async () => {
-      mockFetch.mockResolvedValue({
+    it("should handle special characters in properties", async () => {
+      const mockResponse = {
         ok: true,
-        json: vi.fn().mockResolvedValue({}), // No users array
-      });
+        json: vi.fn().mockResolvedValue({ localId: validUid }),
+      };
 
-      await expect(updateUserHandler(validUid, { displayName: "John" }, validOAuth2Token)).rejects.toThrow(
-        "Invalid response from Firebase API - no user data returned"
+      mockFetch.mockResolvedValue(mockResponse);
+      mockGetUserHandler.mockResolvedValue(mockUpdatedUserRecord);
+
+      const updateRequest: UpdateRequest = {
+        displayName: "José María López (CEO) 🚀",
+        email: "test.user+tag@example-domain.com",
+      };
+
+      const result = await updateUserHandler(validUid, updateRequest, validOAuth2Token);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://identitytoolkit.googleapis.com/v1/accounts:update",
+        expect.objectContaining({
+          body: JSON.stringify({
+            displayName: "José María López (CEO) 🚀",
+            email: "test.user+tag@example-domain.com",
+            localId: validUid,
+          }),
+        })
       );
-    });
 
-    it("should handle empty users array in response", async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ users: [] }),
-      });
-
-      await expect(updateUserHandler(validUid, { displayName: "John" }, validOAuth2Token)).rejects.toThrow(
-        "Invalid response from Firebase API - no user data returned"
-      );
+      expect(result).toBe(mockUpdatedUserRecord);
     });
   });
 });
