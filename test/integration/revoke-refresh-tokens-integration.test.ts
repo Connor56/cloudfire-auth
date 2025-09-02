@@ -133,7 +133,7 @@ describe.skipIf(doNotRunIntegrationTests)("Revoke Refresh Tokens Handler Integra
 
   describe("Multiple User Scenarios", () => {
     it("should revoke tokens for multiple users independently", async () => {
-      const testStartTimestamp = Date.now() / 1000;
+      const testStartTimestamp = Date.now() / 1000 - 10; // -10 seconds to ensure a current validSince will be less than the testStartTimestamp
       const user1 = await createTestUser("revoke-multi1@example.com", "Multi User 1");
       const user2 = await createTestUser("revoke-multi2@example.com", "Multi User 2");
 
@@ -160,7 +160,7 @@ describe.skipIf(doNotRunIntegrationTests)("Revoke Refresh Tokens Handler Integra
     });
 
     it("should handle concurrent revocation requests for the same user", async () => {
-      const testStartTimestamp = Date.now() / 1000;
+      const testStartTimestamp = Date.now() / 1000 - 10; // -10 seconds to ensure a current validSince will be less than the testStartTimestamp
       const testUser = await createTestUser("revoke-concurrent@example.com", "Concurrent User");
 
       // Make concurrent revocation calls
@@ -182,7 +182,7 @@ describe.skipIf(doNotRunIntegrationTests)("Revoke Refresh Tokens Handler Integra
 
   describe("Integration with ID Token Verification", () => {
     it("should make existing ID tokens fail revocation check", async () => {
-      const testStartTimestamp = Date.now() / 1000;
+      const testStartTimestamp = Date.now() / 1000 - 10; // -10 seconds to ensure a current validSince will be less than the testStartTimestamp
       const testUser = await createTestUser("revoke-idtoken@example.com", "ID Token User");
 
       // This test would require creating a valid ID token, which is complex in isolation
@@ -190,8 +190,6 @@ describe.skipIf(doNotRunIntegrationTests)("Revoke Refresh Tokens Handler Integra
       // as it's tested in the verify-id-token integration tests
 
       await revokeRefreshTokensHandler(testUser.localId, oauth2Token);
-
-      await new Promise<void>((resolve) => setTimeout(resolve, 200));
 
       // Verify the user data shows updated validSince
       const userLookup = await getUserByLocalId(testUser.localId, oauth2Token);
@@ -202,7 +200,7 @@ describe.skipIf(doNotRunIntegrationTests)("Revoke Refresh Tokens Handler Integra
 
   describe("Security Scenarios", () => {
     it("should work as part of security incident response", async () => {
-      const testStartTimestamp = Date.now() / 1000;
+      const testStartTimestamp = Date.now() / 1000 - 10; // -10 seconds to ensure a current validSince will be less than the testStartTimestamp
       const testUser = await createTestUser("revoke-security@example.com", "Security User");
 
       // Simulate security incident: immediately revoke all tokens
