@@ -98,7 +98,8 @@ export class CloudFireAuth {
    *   data corresponding to the provided `uid`.
    */
   async getUser(uid: string): Promise<UserRecord> {
-    return await getUserHandler(uid);
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await getUserHandler(uid, oauth2Token);
   }
   /**
    * Gets the user data for the user corresponding to a given email.
