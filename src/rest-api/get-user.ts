@@ -115,14 +115,20 @@ export async function getUserHandler(uid: string, oauth2AccessToken: string): Pr
   }
 
   const data = (await response.json()) as { users: GetAccountInfoUserResponse[] };
+  let userData: GetAccountInfoUserResponse | undefined;
 
-  const userData = data.users[0];
+  try {
+    userData = data.users[0];
+  } catch (error) {
+    console.error("Error parsing user data:", error);
+    throw new Error(`User not found: ${uid}`);
+  }
 
   if (!userData) {
     throw new Error(`User not found: ${uid}`);
   }
 
-  const userRecord: UserRecord = convertToUserRecord(userData);
+  const userRecord: UserRecord = convertToUserRecord(userData!);
 
   return userRecord;
 }
