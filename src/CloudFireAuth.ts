@@ -211,7 +211,8 @@ export class CloudFireAuth {
    *   deleted.
    */
   async deleteUser(uid: string): Promise<void> {
-    await deleteUserHandler(uid);
+    const oauth2Token = await this.getOauth2AccessToken();
+    await deleteUserHandler(uid, oauth2Token);
   }
   /**
    * Deletes the users specified by the given uids.
