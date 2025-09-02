@@ -302,7 +302,8 @@ export class CloudFireAuth {
    *   tokens have been revoked.
    */
   async revokeRefreshTokens(uid: string): Promise<void> {
-    return await revokeRefreshTokensHandler(uid);
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await revokeRefreshTokensHandler(uid, oauth2Token);
   }
   /**
    * Verifies a Firebase session cookie. Returns a Promise with the cookie claims.
