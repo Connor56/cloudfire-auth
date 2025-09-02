@@ -9,6 +9,7 @@ import type {
   DeleteUsersResult,
 } from "./types/firebase-admin/index.js";
 import type { ServiceAccountKey } from "./types/service-account-key.js";
+import type { SetAccountInfoResponse } from "./types/google-auth.js";
 
 export type {
   DecodedIdToken,
@@ -22,3 +23,4 @@ export type {
 };
 
 export type { ServiceAccountKey };
+export type { SetAccountInfoResponse };
