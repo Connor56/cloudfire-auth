@@ -215,9 +215,9 @@ describe("updateUserHandler", () => {
           Authorization: `Bearer ${validOAuth2Token}`,
         },
         body: JSON.stringify({
-          localId: validUid,
           displayName: "John Doe",
           email: "john@example.com",
+          localId: validUid,
         }),
       });
     });
@@ -305,7 +305,7 @@ describe("updateUserHandler", () => {
       });
 
       await expect(updateUserHandler(validUid, { displayName: "John" }, validOAuth2Token)).rejects.toThrow(
-        "Failed to update user: 400 Bad Request - EMAIL_EXISTS"
+        'Failed to update user: 400 Bad Request\n{\n  "error": {\n    "message": "EMAIL_EXISTS",\n    "code": 400\n  }\n}'
       );
     });
 
