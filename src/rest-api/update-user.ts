@@ -156,8 +156,8 @@ export async function updateUserHandler(
 
   // Transform provider operations to Firebase API format
   const requestBody: any = {
-    localId: uid,
     ...validProperties,
+    localId: uid,
   };
 
   // Handle provider linking transformation
@@ -183,20 +183,17 @@ export async function updateUserHandler(
 
   if (!response.ok) {
     const errorText = await response.text();
-    let errorMessage = `Failed to update user: ${response.status} ${response.statusText}`;
+    let errorMessage: string;
 
-    // Try to extract Firebase error details
     try {
+      console.log("errorText", errorText);
       const errorData = JSON.parse(errorText);
-      if (errorData.error?.message) {
-        errorMessage += ` - ${errorData.error.message}`;
-      } else if (errorText) {
-        errorMessage += ` - ${errorText}`;
-      }
+
+      const formattedErrorText = JSON.stringify(errorData, null, 2);
+
+      errorMessage = `Failed to update user: ${response.status} ${response.statusText}\n${formattedErrorText}`;
     } catch {
-      if (errorText) {
-        errorMessage += ` - ${errorText}`;
-      }
+      errorMessage = `Failed to update user: ${response.status} ${response.statusText} - ${errorText}`;
     }
 
     throw new Error(errorMessage);
