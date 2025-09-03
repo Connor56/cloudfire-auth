@@ -310,7 +310,7 @@ describe.skipIf(doNotRunIntegrationTests)("Delete User Handler Integration Tests
       ]);
 
       // Simulate admin cleanup process
-      const deletionResults = [];
+      const deletionResults: any[] = [];
 
       for (const user of testUsers) {
         try {
@@ -441,7 +441,7 @@ describe.skipIf(doNotRunIntegrationTests)("Delete User Handler Integration Tests
 
   describe("Performance and Reliability", () => {
     it("should handle sequential deletions efficiently", async () => {
-      const users = [];
+      const users: any[] = [];
 
       // Create users sequentially
       for (let i = 1; i <= 5; i++) {

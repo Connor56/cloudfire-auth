@@ -425,7 +425,7 @@ describe("deleteUserHandler", () => {
       mockFetch.mockResolvedValue(mockResponse);
 
       // Rapidly call delete multiple times for the same user
-      const rapidDeletions = [];
+      const rapidDeletions: any[] = [];
       for (let i = 0; i < 5; i++) {
         rapidDeletions.push(deleteUserHandler(validUid, validOAuth2Token));
       }
