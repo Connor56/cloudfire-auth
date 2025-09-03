@@ -1,5 +1,5 @@
 import { importPKCS8, SignJWT } from "jose";
-import type { KVNamespace } from "@cloudflare/workers-types";
+
 import type { ServiceAccountKey } from "../types.js";
 
 interface Oauth2TokenResponse {

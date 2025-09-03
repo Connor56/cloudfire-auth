@@ -40,8 +40,6 @@ import type {
   ServiceAccountKey,
 } from "./types.js";
 
-import type { KVNamespace } from "@cloudflare/workers-types";
-
 // Rest API
 import { verifyIdTokenHandler } from "./rest-api/verify-id-token.js";
 import { getUserHandler } from "./rest-api/get-user.js";
