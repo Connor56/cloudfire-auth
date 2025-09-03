@@ -21,8 +21,6 @@ npm install cloudfire-auth
 ```typescript
 import { CloudFireAuth, ServiceAccountKey } from "cloudfire-auth";
 
-const serviceAccountKey: ServiceAccountKey =
-
 // Initialize with your Firebase project credentials
 const auth = new CloudFireAuth(
   "your-firebase-project-id",
