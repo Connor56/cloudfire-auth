@@ -45,7 +45,7 @@ export async function getOauth2AccessTokenHandler(
 
   if (kvNamespace) {
     await kvNamespace.put("oauth2Token", oauth2TokenResponse.access_token, {
-      expiration: shortestExpiration,
+      expirationTtl: shortestExpiration,
     });
   }
 
