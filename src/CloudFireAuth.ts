@@ -65,8 +65,8 @@ export class CloudFireAuth {
   private oauth2Token?: string;
   private kvNamespace?: KVNamespace;
 
-  constructor(projectId: string, serviceAccountKey: ServiceAccountKey, kvNamespace?: KVNamespace) {
-    this.projectId = projectId;
+  constructor(serviceAccountKey: ServiceAccountKey, kvNamespace?: KVNamespace) {
+    this.projectId = serviceAccountKey.project_id;
     this.serviceAccountKey = serviceAccountKey;
     this.kvNamespace = kvNamespace;
   }
