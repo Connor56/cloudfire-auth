@@ -165,6 +165,24 @@ describe.skipIf(doNotRunIntegrationTests)("Verify ID Token Handler Integration T
   });
 });
 
+describe("Basic token validation", () => {
+  it("Should verify a valid token", async () => {
+    const token = process.env.FAILING_JWT || "";
+    if (!token) {
+      throw new Error("FAILING_JWT environment variable is not set");
+    }
+
+    const oauth2Token = await getOauth2AccessTokenHandler(serviceAccountKey, 3000);
+
+    console.log(
+      "IF THIS FAILS IT'S LIKELY BECAUSE THE TOKEN IS NOW EXPIRED. THIS TEST IS MEANT FOR DEBUGGING PRODUCTION ISSUES."
+    );
+
+    const decodedToken = await verifyIdTokenHandler(token, env.PROJECT_ID || "", oauth2Token);
+    expect(decodedToken).toBeDefined();
+  });
+});
+
 /**
  * Creates various fake JWT tokens for testing token validation failures.
  * @returns Array of fake tokens with descriptions
