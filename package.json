@@ -1,7 +1,13 @@
 {
   "name": "cloudfire-auth",
   "version": "0.1.0",
+  "author": "Connor Skelland",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "description": "Firebase Auth in Cloudflare Workers.",
+  "homepage": "https://github.com/connorskelland/cloudfire-auth",
   "keywords": [
     "firebase",
     "auth",
@@ -21,14 +27,10 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "tsup",
-    "build:watch": "tsup --watch",
-    "prepublishOnly": "npm run build"
-  },
-  "author": "Connor Skelland",
-  "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0"
+    "build": "tsc",
+    "clean": "tsc --build --clean",
+    "build:watch": "tsc --watch",
+    "prepublishOnly": "npm run test && npm run clean && npm run build"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250816.0",
