@@ -12,16 +12,14 @@
     "types": ["@cloudflare/workers-types"],
 
     // Other Outputs
-    "sourceMap": true,
     "declaration": true,
-    "declarationMap": true,
 
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
 
     // Style Options
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // "noUnusedParameters": true,
     "noPropertyAccessFromIndexSignature": true,
 
     // Recommended Options
