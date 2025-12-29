@@ -185,8 +185,6 @@ async function getTokenValidSinceTime(localId: string, oauth2Token: string): Pro
 async function validateJwtBody(token: string, projectId: string): Promise<{ isValid: boolean; errorMessage?: string }> {
   const firebaseJwtBody: DecodedIdToken = decodeJwt(token) as DecodedIdToken;
 
-  // console.log("just the decoded token", decodeJwt(token));
-
   if (firebaseJwtBody.aud !== projectId) {
     return {
       isValid: false,
