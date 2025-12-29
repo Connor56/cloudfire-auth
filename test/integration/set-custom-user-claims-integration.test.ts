@@ -36,13 +36,14 @@ describe.skipIf(doNotRunIntegrationTests)("Set Custom User Claims Handler Integr
 
   // Get OAuth2 token for Firebase Admin API
   const oauth2Token = await getOauth2AccessTokenHandler(serviceAccountKey, 3000, KV_NAMESPACE);
-  console.log("OAuth2 token obtained for custom claims tests");
+  console.log("OAuth2 token obtained for custom claims tests", oauth2Token);
 
   const userEmail = "test-custom-claims@example.com";
   const userDisplayName = "Custom Claims Test User";
 
   // Create a test user
   const testUser = await addANewUserWithSignUp(oauth2Token, userEmail, userDisplayName);
+  console.log("response from addANewUserWithSignUp", testUser);
   console.log("Test user created:", testUser.localId);
 
   it("Should set basic custom claims successfully", async () => {
