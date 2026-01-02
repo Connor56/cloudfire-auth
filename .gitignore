@@ -9,3 +9,6 @@ service-account-key.json
 
 # Ignore tool version files
 mise.toml
+
+# Ignore Custom Claude setup
+.claude/
