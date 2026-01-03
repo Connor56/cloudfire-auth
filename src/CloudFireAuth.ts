@@ -16,6 +16,13 @@
  */
 
 /**
+ * You can find the code taken from the Firebase Admin SDK in this location of
+ * the firebase-admin 13.4.0 npm package:
+ *
+ * firebase-admin/lib/auth/base-auth.d.ts
+ */
+
+/**
  * Alterations to Firebase Admin SDK Code
  *
  * The code covered by the above notice in this file are the method names inside of
@@ -38,9 +45,19 @@ import type {
   UpdateRequest,
   DeleteUsersResult,
   ServiceAccountKey,
+  SessionCookieOptions,
+  ActionCodeSettings,
+  AuthProviderConfig,
+  UpdateAuthProviderRequest,
+  AuthProviderConfigFilter,
+  ListProviderConfigResults,
+  UserImportRecord,
+  UserImportOptions,
+  UserImportResult,
 } from "./types.js";
 
 // Rest API
+import { createCustomTokenHandler } from "./rest-api/create-custom-token.js";
 import { verifyIdTokenHandler } from "./rest-api/verify-id-token.js";
 import { getUserHandler } from "./rest-api/get-user.js";
 import { getUserByEmailHandler } from "./rest-api/get-user-by-email.js";
@@ -55,6 +72,17 @@ import { updateUserHandler } from "./rest-api/update-user.js";
 import { setCustomUserClaimsHandler } from "./rest-api/set-custom-user-claims.js";
 import { revokeRefreshTokensHandler } from "./rest-api/revoke-refresh-tokens.js";
 import { verifySessionCookieHandler } from "./rest-api/verify-session-cookie.js";
+import { importUsersHandler } from "./rest-api/import-users.js";
+import { createSessionCookieHandler } from "./rest-api/create-session-cookie.js";
+import { generatePasswordResetLinkHandler } from "./rest-api/generate-password-reset-link.js";
+import { generateEmailVerificationLinkHandler } from "./rest-api/generate-email-verification-link.js";
+import { generateVerifyAndChangeEmailLinkHandler } from "./rest-api/generate-verify-and-change-email-link.js";
+import { generateSignInWithEmailLinkHandler } from "./rest-api/generate-sign-in-with-email-link.js";
+import { listProviderConfigsHandler } from "./rest-api/list-provider-configs.js";
+import { getProviderConfigHandler } from "./rest-api/get-provider-config.js";
+import { deleteProviderConfigHandler } from "./rest-api/delete-provider-config.js";
+import { updateProviderConfigHandler } from "./rest-api/update-provider-config.js";
+import { createProviderConfigHandler } from "./rest-api/create-provider-config.js";
 
 // Google Auth
 import { getOauth2AccessTokenHandler } from "./google-auth/get-oauth-2-token.js";
@@ -69,6 +97,26 @@ export class CloudFireAuth {
     this.projectId = serviceAccountKey.project_id;
     this.serviceAccountKey = serviceAccountKey;
     this.kvNamespace = kvNamespace;
+  }
+  /**
+   * Creates a new Firebase custom token (JWT) that can be sent back to a client
+   * device to use to sign in with the client SDKs' `signInWithCustomToken()`
+   * methods. (Tenant-aware instances will also embed the tenant ID in the
+   * token.)
+   *
+   * See {@link https://firebase.google.com/docs/auth/admin/create-custom-tokens | Create Custom Tokens}
+   * for code samples and detailed documentation.
+   *
+   * @param uid - The `uid` to use as the custom token's subject.
+   * @param developerClaims - Optional additional claims to include
+   *   in the custom token's payload.
+   *
+   * @returns A promise fulfilled with a custom token for the
+   *   provided `uid` and payload.
+   */
+  async createCustomToken(uid: string, developerClaims?: object): Promise<string> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await createCustomTokenHandler(uid, developerClaims, oauth2Token);
   }
   /**
    * Verifies a Firebase ID token (JWT). If the token is valid, the promise is
@@ -319,6 +367,48 @@ export class CloudFireAuth {
     return await revokeRefreshTokensHandler(uid, oauth2Token);
   }
   /**
+   * Imports the provided list of users into Firebase Auth.
+   * A maximum of 1000 users are allowed to be imported one at a time.
+   * When importing users with passwords,
+   * {@link UserImportOptions} are required to be
+   * specified.
+   * This operation is optimized for bulk imports and will ignore checks on `uid`,
+   * `email` and other identifier uniqueness which could result in duplications.
+   *
+   * @param users - The list of user records to import to Firebase Auth.
+   * @param options - The user import options, required when the users provided include
+   *   password credentials.
+   * @returns A promise that resolves when
+   *   the operation completes with the result of the import. This includes the
+   *   number of successful imports, the number of failed imports and their
+   *   corresponding errors.
+   */
+  async importUsers(users: UserImportRecord[], options?: UserImportOptions): Promise<UserImportResult> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await importUsersHandler(users, options, oauth2Token);
+  }
+  /**
+   * Creates a new Firebase session cookie with the specified options. The created
+   * JWT string can be set as a server-side session cookie with a custom cookie
+   * policy, and be used for session management. The session cookie JWT will have
+   * the same payload claims as the provided ID token.
+   *
+   * See {@link https://firebase.google.com/docs/auth/admin/manage-cookies | Manage Session Cookies}
+   * for code samples and detailed documentation.
+   *
+   * @param idToken - The Firebase ID token to exchange for a session
+   *   cookie.
+   * @param sessionCookieOptions - The session
+   *   cookie options which includes custom session duration.
+   *
+   * @returns A promise that resolves on success with the
+   *   created session cookie.
+   */
+  async createSessionCookie(idToken: string, sessionCookieOptions: SessionCookieOptions): Promise<string> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await createSessionCookieHandler(idToken, sessionCookieOptions, oauth2Token);
+  }
+  /**
    * Verifies a Firebase session cookie. Returns a Promise with the cookie claims.
    * Rejects the promise if the cookie could not be verified.
    *
@@ -345,6 +435,284 @@ export class CloudFireAuth {
    */
   async verifySessionCookie(sessionCookie: string, checkRevoked?: boolean): Promise<DecodedIdToken> {
     return await verifySessionCookieHandler(sessionCookie, checkRevoked);
+  }
+  /**
+   * Generates the out of band email action link to reset a user's password.
+   * The link is generated for the user with the specified email address. The
+   * optional  {@link ActionCodeSettings} object
+   * defines whether the link is to be handled by a mobile app or browser and the
+   * additional state information to be passed in the deep link, etc.
+   *
+   * @example
+   * ```javascript
+   * var actionCodeSettings = {
+   *   url: 'https://www.example.com/?email=user@example.com',
+   *   iOS: {
+   *     bundleId: 'com.example.ios'
+   *   },
+   *   android: {
+   *     packageName: 'com.example.android',
+   *     installApp: true,
+   *     minimumVersion: '12'
+   *   },
+   *   handleCodeInApp: true,
+   *   linkDomain: 'project-id.firebaseapp.com'
+   * };
+   * admin.auth()
+   *     .generatePasswordResetLink('user@example.com', actionCodeSettings)
+   *     .then(function(link) {
+   *       // The link was successfully generated.
+   *     })
+   *     .catch(function(error) {
+   *       // Some error occurred, you can inspect the code: error.code
+   *     });
+   * ```
+   *
+   * @param email - The email address of the user whose password is to be
+   *   reset.
+   * @param actionCodeSettings - The action
+   *     code settings. If specified, the state/continue URL is set as the
+   *     "continueUrl" parameter in the password reset link. The default password
+   *     reset landing page will use this to display a link to go back to the app
+   *     if it is installed.
+   *     If the actionCodeSettings is not specified, no URL is appended to the
+   *     action URL.
+   *     The state URL provided must belong to a domain that is whitelisted by the
+   *     developer in the console. Otherwise an error is thrown.
+   *     Mobile app redirects are only applicable if the developer configures
+   *     and accepts the Firebase Dynamic Links terms of service.
+   *     The Android package name and iOS bundle ID are respected only if they
+   *     are configured in the same Firebase Auth project.
+   * @returns A promise that resolves with the generated link.
+   */
+  async generatePasswordResetLink(email: string, actionCodeSettings?: ActionCodeSettings): Promise<string> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await generatePasswordResetLinkHandler(email, actionCodeSettings, oauth2Token);
+  }
+  /**
+   * Generates the out of band email action link to verify the user's ownership
+   * of the specified email. The {@link ActionCodeSettings} object provided
+   * as an argument to this method defines whether the link is to be handled by a
+   * mobile app or browser along with additional state information to be passed in
+   * the deep link, etc.
+   *
+   * @example
+   * ```javascript
+   * var actionCodeSettings = {
+   *   url: 'https://www.example.com/cart?email=user@example.com&cartId=123',
+   *   iOS: {
+   *     bundleId: 'com.example.ios'
+   *   },
+   *   android: {
+   *     packageName: 'com.example.android',
+   *     installApp: true,
+   *     minimumVersion: '12'
+   *   },
+   *   handleCodeInApp: true,
+   *   linkDomain: 'project-id.firebaseapp.com'
+   * };
+   * admin.auth()
+   *     .generateEmailVerificationLink('user@example.com', actionCodeSettings)
+   *     .then(function(link) {
+   *       // The link was successfully generated.
+   *     })
+   *     .catch(function(error) {
+   *       // Some error occurred, you can inspect the code: error.code
+   *     });
+   * ```
+   *
+   * @param email - The email account to verify.
+   * @param actionCodeSettings - The action
+   *     code settings. If specified, the state/continue URL is set as the
+   *     "continueUrl" parameter in the email verification link. The default email
+   *     verification landing page will use this to display a link to go back to
+   *     the app if it is installed.
+   *     If the actionCodeSettings is not specified, no URL is appended to the
+   *     action URL.
+   *     The state URL provided must belong to a domain that is whitelisted by the
+   *     developer in the console. Otherwise an error is thrown.
+   *     Mobile app redirects are only applicable if the developer configures
+   *     and accepts the Firebase Dynamic Links terms of service.
+   *     The Android package name and iOS bundle ID are respected only if they
+   *     are configured in the same Firebase Auth project.
+   * @returns A promise that resolves with the generated link.
+   */
+  async generateEmailVerificationLink(email: string, actionCodeSettings?: ActionCodeSettings): Promise<string> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await generateEmailVerificationLinkHandler(email, actionCodeSettings, oauth2Token);
+  }
+  /**
+   * Generates an out-of-band email action link to verify the user's ownership
+   * of the specified email. The {@link ActionCodeSettings} object provided
+   * as an argument to this method defines whether the link is to be handled by a
+   * mobile app or browser along with additional state information to be passed in
+   * the deep link, etc.
+   *
+   * @param email - The current email account.
+   * @param newEmail - The email address the account is being updated to.
+   * @param actionCodeSettings - The action
+   *     code settings. If specified, the state/continue URL is set as the
+   *     "continueUrl" parameter in the email verification link. The default email
+   *     verification landing page will use this to display a link to go back to
+   *     the app if it is installed.
+   *     If the actionCodeSettings is not specified, no URL is appended to the
+   *     action URL.
+   *     The state URL provided must belong to a domain that is authorized
+   *     in the console, or an error will be thrown.
+   *     Mobile app redirects are only applicable if the developer configures
+   *     and accepts the Firebase Dynamic Links terms of service.
+   *     The Android package name and iOS bundle ID are respected only if they
+   *     are configured in the same Firebase Auth project.
+   * @returns A promise that resolves with the generated link.
+   */
+  async generateVerifyAndChangeEmailLink(
+    email: string,
+    newEmail: string,
+    actionCodeSettings?: ActionCodeSettings
+  ): Promise<string> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await generateVerifyAndChangeEmailLinkHandler(email, newEmail, actionCodeSettings, oauth2Token);
+  }
+  /**
+   * Generates the out of band email action link to verify the user's ownership
+   * of the specified email. The {@link ActionCodeSettings} object provided
+   * as an argument to this method defines whether the link is to be handled by a
+   * mobile app or browser along with additional state information to be passed in
+   * the deep link, etc.
+   *
+   * @example
+   * ```javascript
+   * var actionCodeSettings = {
+   *   url: 'https://www.example.com/cart?email=user@example.com&cartId=123',
+   *   iOS: {
+   *     bundleId: 'com.example.ios'
+   *   },
+   *   android: {
+   *     packageName: 'com.example.android',
+   *     installApp: true,
+   *     minimumVersion: '12'
+   *   },
+   *   handleCodeInApp: true,
+   *   linkDomain: 'project-id.firebaseapp.com'
+   * };
+   * admin.auth()
+   *     .generateEmailVerificationLink('user@example.com', actionCodeSettings)
+   *     .then(function(link) {
+   *       // The link was successfully generated.
+   *     })
+   *     .catch(function(error) {
+   *       // Some error occurred, you can inspect the code: error.code
+   *     });
+   * ```
+   *
+   * @param email - The email account to verify.
+   * @param actionCodeSettings - The action
+   *     code settings. If specified, the state/continue URL is set as the
+   *     "continueUrl" parameter in the email verification link. The default email
+   *     verification landing page will use this to display a link to go back to
+   *     the app if it is installed.
+   *     If the actionCodeSettings is not specified, no URL is appended to the
+   *     action URL.
+   *     The state URL provided must belong to a domain that is whitelisted by the
+   *     developer in the console. Otherwise an error is thrown.
+   *     Mobile app redirects are only applicable if the developer configures
+   *     and accepts the Firebase Dynamic Links terms of service.
+   *     The Android package name and iOS bundle ID are respected only if they
+   *     are configured in the same Firebase Auth project.
+   * @returns A promise that resolves with the generated link.
+   */
+  async generateSignInWithEmailLink(email: string, actionCodeSettings: ActionCodeSettings): Promise<string> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await generateSignInWithEmailLinkHandler(email, actionCodeSettings, oauth2Token);
+  }
+  /**
+   * Returns the list of existing provider configurations matching the filter
+   * provided. At most, 100 provider configs can be listed at a time.
+   *
+   * SAML and OIDC provider support requires Google Cloud's Identity Platform
+   * (GCIP). To learn more about GCIP, including pricing and features,
+   * see the {@link https://cloud.google.com/identity-platform | GCIP documentation}.
+   *
+   * @param options - The provider config filter to apply.
+   * @returns A promise that resolves with the list of provider configs meeting the
+   *   filter requirements.
+   */
+  async listProviderConfigs(options: AuthProviderConfigFilter): Promise<ListProviderConfigResults> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await listProviderConfigsHandler(options, oauth2Token);
+  }
+  /**
+   * Looks up an Auth provider configuration by the provided ID.
+   * Returns a promise that resolves with the provider configuration
+   * corresponding to the provider ID specified. If the specified ID does not
+   * exist, an `auth/configuration-not-found` error is thrown.
+   *
+   * SAML and OIDC provider support requires Google Cloud's Identity Platform
+   * (GCIP). To learn more about GCIP, including pricing and features,
+   * see the {@link https://cloud.google.com/identity-platform | GCIP documentation}.
+   *
+   * @param providerId - The provider ID corresponding to the provider
+   *     config to return.
+   * @returns A promise that resolves
+   *     with the configuration corresponding to the provided ID.
+   */
+  async getProviderConfig(providerId: string): Promise<AuthProviderConfig> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await getProviderConfigHandler(providerId, oauth2Token);
+  }
+  /**
+   * Deletes the provider configuration corresponding to the provider ID passed.
+   * If the specified ID does not exist, an `auth/configuration-not-found` error
+   * is thrown.
+   *
+   * SAML and OIDC provider support requires Google Cloud's Identity Platform
+   * (GCIP). To learn more about GCIP, including pricing and features,
+   * see the {@link https://cloud.google.com/identity-platform | GCIP documentation}.
+   *
+   * @param providerId - The provider ID corresponding to the provider
+   *     config to delete.
+   * @returns A promise that resolves on completion.
+   */
+  async deleteProviderConfig(providerId: string): Promise<void> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    await deleteProviderConfigHandler(providerId, oauth2Token);
+  }
+  /**
+   * Returns a promise that resolves with the updated `AuthProviderConfig`
+   * corresponding to the provider ID specified.
+   * If the specified ID does not exist, an `auth/configuration-not-found` error
+   * is thrown.
+   *
+   * SAML and OIDC provider support requires Google Cloud's Identity Platform
+   * (GCIP). To learn more about GCIP, including pricing and features,
+   * see the {@link https://cloud.google.com/identity-platform | GCIP documentation}.
+   *
+   * @param providerId - The provider ID corresponding to the provider
+   *     config to update.
+   * @param updatedConfig - The updated configuration.
+   * @returns A promise that resolves with the updated provider configuration.
+   */
+  async updateProviderConfig(
+    providerId: string,
+    updatedConfig: UpdateAuthProviderRequest
+  ): Promise<AuthProviderConfig> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await updateProviderConfigHandler(providerId, updatedConfig, oauth2Token);
+  }
+  /**
+   * Returns a promise that resolves with the newly created `AuthProviderConfig`
+   * when the new provider configuration is created.
+   *
+   * SAML and OIDC provider support requires Google Cloud's Identity Platform
+   * (GCIP). To learn more about GCIP, including pricing and features,
+   * see the {@link https://cloud.google.com/identity-platform | GCIP documentation}.
+   *
+   * @param config - The provider configuration to create.
+   * @returns A promise that resolves with the created provider configuration.
+   */
+  async createProviderConfig(config: AuthProviderConfig): Promise<AuthProviderConfig> {
+    const oauth2Token = await this.getOauth2AccessToken();
+    return await createProviderConfigHandler(config, oauth2Token);
   }
 
   /**
