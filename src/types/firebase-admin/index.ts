@@ -14,13 +14,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * You can find the code taken from the Firebase Admin SDK in this location of
+ * the firebase-admin 13.4.0 npm package:
+ *
+ * firebase-admin/lib/auth/base-auth.d.ts
+ * firebase-admin/lib/app/index.d.ts
+ */
+
 import type { DecodedIdToken } from "./token-verifier.js";
 import type { UserRecord } from "./user-record.js";
-import type { CreateRequest, UpdateRequest } from "./auth-config.js";
+import type {
+  CreateRequest,
+  UpdateRequest,
+  AuthProviderConfig,
+  UpdateAuthProviderRequest,
+  AuthProviderConfigFilter,
+  ListProviderConfigResults,
+} from "./auth-config.js";
 import type { UserIdentifier } from "./identifier.js";
+import type { ActionCodeSettings } from "./action-code-settings.js";
+import type {
+  UserImportRecord,
+  UserImportOptions,
+  UserImportResult,
+  HashAlgorithmType,
+  UserMetadataRequest,
+  UserProviderRequest,
+} from "./user-import.js";
 
-export type { DecodedIdToken, UserRecord, CreateRequest, UpdateRequest, UserIdentifier };
-
+export type {
+  DecodedIdToken,
+  UserRecord,
+  CreateRequest,
+  UpdateRequest,
+  UserIdentifier,
+  AuthProviderConfig,
+  UpdateAuthProviderRequest,
+  AuthProviderConfigFilter,
+  ListProviderConfigResults,
+  ActionCodeSettings,
+  UserImportRecord,
+  UserImportOptions,
+  UserImportResult,
+  HashAlgorithmType,
+  UserMetadataRequest,
+  UserProviderRequest,
+};
 /**
  * `FirebaseError` is a subclass of the standard JavaScript `Error` object. In
  * addition to a message string and stack trace, it contains a string code.
