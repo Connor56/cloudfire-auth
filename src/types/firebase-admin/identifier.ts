@@ -14,13 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * You can find the code taken from the Firebase Admin SDK in this location of
+ * the firebase-admin 13.4.0 npm package:
+ *
+ * firebase-admin/lib/auth/identifier.d.ts
+ */
+
 /**
  * Used for looking up an account by uid.
  *
  * See {@link BaseAuth.getUsers}.
  */
 export interface UidIdentifier {
-    uid: string;
+  uid: string;
 }
 /**
  * Used for looking up an account by email.
@@ -28,7 +36,7 @@ export interface UidIdentifier {
  * See {@link BaseAuth.getUsers}.
  */
 export interface EmailIdentifier {
-    email: string;
+  email: string;
 }
 /**
  * Used for looking up an account by phone number.
@@ -36,7 +44,7 @@ export interface EmailIdentifier {
  * See {@link BaseAuth.getUsers}.
  */
 export interface PhoneIdentifier {
-    phoneNumber: string;
+  phoneNumber: string;
 }
 /**
  * Used for looking up an account by federated provider.
@@ -44,8 +52,8 @@ export interface PhoneIdentifier {
  * See {@link BaseAuth.getUsers}.
  */
 export interface ProviderIdentifier {
-    providerId: string;
-    providerUid: string;
+  providerId: string;
+  providerUid: string;
 }
 /**
  * Identifies a user to be looked up.
