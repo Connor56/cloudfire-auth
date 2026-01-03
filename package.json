@@ -29,7 +29,7 @@
     "test": "vitest run",
     "test:integration": "RUN_INTEGRATION_TESTS=true vitest run",
     "build": "tsc",
-    "clean": "rm -rf dist",
+    "clean": "tsx scripts/publishing/remove-dist.ts",
     "build:watch": "tsc --watch",
     "prepublishOnly": "npm run test && npm run clean && npm run build"
   },
