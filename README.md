@@ -19,17 +19,20 @@ npm install cloudfire-auth
 ## Quick Start
 
 ```typescript
-import { CloudFireAuth, ServiceAccountKey } from "cloudfire-auth";
+import { CloudFireAuth } from "cloudfire-auth";
+
+// It is best practice to store your service account key separately and
+// load it from a secure source.
+const serviceAccountKey = {
+  // Your Firebase service account key
+  private_key: "-----BEGIN PRIVATE KEY-----\n...",
+  client_email: "firebase-adminsdk-...@your-project.iam.gserviceaccount.com",
+  // ... other service account fields
+};
 
 // Initialize with your Firebase project credentials
 const auth = new CloudFireAuth(
-  "your-firebase-project-id",
-  {
-    // Your Firebase service account key
-    private_key: "-----BEGIN PRIVATE KEY-----\n...",
-    client_email: "firebase-adminsdk-...@your-project.iam.gserviceaccount.com",
-    // ... other service account fields
-  },
+  serviceAccountKey,
   env.YOUR_KV_NAMESPACE // Optional: KV namespace for token caching
 );
 
@@ -51,10 +54,9 @@ console.log("User email:", user.email);
 ### Constructor
 
 ```typescript
-new CloudFireAuth(projectId: string, serviceAccountKey: ServiceAccountKey, kvNamespace?: KVNamespace)
+new CloudFireAuth(serviceAccountKey: ServiceAccountKey, kvNamespace?: KVNamespace)
 ```
 
-- `projectId`: Your Firebase project ID
 - `serviceAccountKey`: Firebase service account credentials
 - `kvNamespace`: Optional KV namespace for OAuth2 token caching
 
@@ -81,7 +83,6 @@ new CloudFireAuth(projectId: string, serviceAccountKey: ServiceAccountKey, kvNam
 
 Your Cloudflare Worker needs these environment variables:
 
-- `FIREBASE_PROJECT_ID`: Your Firebase project ID
 - `FIREBASE_SERVICE_ACCOUNT_KEY`: JSON string of your service account key
 - `AUTH_KV_NAMESPACE`: (Optional) KV namespace for token caching
 
