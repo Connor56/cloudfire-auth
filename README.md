@@ -62,34 +62,56 @@ new CloudFireAuth(serviceAccountKey: ServiceAccountKey, kvNamespace?: KVNamespac
 
 ### Methods
 
-| Category                   | Method                                                                                                       | Status | Description                             |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ | ------ | --------------------------------------- |
-| **Authentication**         | `verifyIdToken(idToken: string, checkRevoked?: boolean)`                                                     | ✅     | Verify Firebase ID tokens               |
-|                            | `verifySessionCookie(sessionCookie: string, checkRevoked?: boolean)`                                         | ✅     | Verify session cookies                  |
-|                            | `createSessionCookie(idToken: string, sessionCookieOptions: SessionCookieOptions)`                           | ❌     | Create session cookie from ID token     |
-|                            | `createCustomToken(uid: string, developerClaims?: object)`                                                   | ❌     | Create custom token for client SDK      |
-| **User Management**        | `getUser(uid: string)`                                                                                       | ✅     | Get user by UID                         |
-|                            | `getUserByEmail(email: string)`                                                                              | ❌     | Get user by email                       |
-|                            | `getUserByPhoneNumber(phoneNumber: string)`                                                                  | ❌     | Get user by phone number                |
-|                            | `getUserByProviderUid(providerId: string, uid: string)`                                                      | ❌     | Get user by provider UID                |
-|                            | `getUsers(identifiers: UserIdentifier[])`                                                                    | ❌     | Get users by identifiers                |
-|                            | `createUser(properties: CreateRequest)`                                                                      | ❌     | Create a new user                       |
-|                            | `updateUser(uid: string, properties: UpdateRequest)`                                                         | ✅     | Update existing user                    |
-|                            | `deleteUser(uid: string)`                                                                                    | ✅     | Delete a user                           |
-|                            | `deleteUsers(uids: string[])`                                                                                | ❌     | Delete multiple users                   |
-|                            | `listUsers(maxResults?: number, pageToken?: string)`                                                         | ❌     | List users with pagination              |
-|                            | `importUsers(users: UserImportRecord[], options?: UserImportOptions)`                                        | ❌     | Bulk import users with password hashes  |
-| **Token Management**       | `revokeRefreshTokens(uid: string)`                                                                           | ✅     | Revoke all refresh tokens for a user    |
-|                            | `setCustomUserClaims(uid: string, customUserClaims: object \| null)`                                         | ✅     | Set custom claims                       |
-| **Email Actions**          | `generatePasswordResetLink(email: string, actionCodeSettings?: ActionCodeSettings)`                          | ❌     | Generate password reset link            |
-|                            | `generateEmailVerificationLink(email: string, actionCodeSettings?: ActionCodeSettings)`                      | ❌     | Generate email verification link        |
-|                            | `generateVerifyAndChangeEmailLink(email: string, newEmail: string, actionCodeSettings?: ActionCodeSettings)` | ❌     | Generate email change verification link |
-|                            | `generateSignInWithEmailLink(email: string, actionCodeSettings: ActionCodeSettings)`                         | ❌     | Generate sign-in with email link        |
-| **Provider Configuration** | `listProviderConfigs(options: AuthProviderConfigFilter)`                                                     | ❌     | List SAML/OIDC provider configurations  |
-|                            | `getProviderConfig(providerId: string)`                                                                      | ❌     | Get provider configuration by ID        |
-|                            | `createProviderConfig(config: AuthProviderConfig)`                                                           | ❌     | Create new provider configuration       |
-|                            | `updateProviderConfig(providerId: string, updatedConfig: UpdateAuthProviderRequest)`                         | ❌     | Update provider configuration           |
-|                            | `deleteProviderConfig(providerId: string)`                                                                   | ❌     | Delete provider configuration           |
+#### Authentication
+
+| Method                                                                             | Status | Description                         |
+| ---------------------------------------------------------------------------------- | ------ | ----------------------------------- |
+| `verifyIdToken(idToken: string, checkRevoked?: boolean)`                           | ✅     | Verify Firebase ID tokens           |
+| `verifySessionCookie(sessionCookie: string, checkRevoked?: boolean)`               | ✅     | Verify session cookies              |
+| `createSessionCookie(idToken: string, sessionCookieOptions: SessionCookieOptions)` | ❌     | Create session cookie from ID token |
+| `createCustomToken(uid: string, developerClaims?: object)`                         | ❌     | Create custom token for client SDK  |
+
+#### User Management
+
+| Method                                                                | Status | Description                            |
+| --------------------------------------------------------------------- | ------ | -------------------------------------- |
+| `getUser(uid: string)`                                                | ✅     | Get user by UID                        |
+| `getUserByEmail(email: string)`                                       | ❌     | Get user by email                      |
+| `getUserByPhoneNumber(phoneNumber: string)`                           | ❌     | Get user by phone number               |
+| `getUserByProviderUid(providerId: string, uid: string)`               | ❌     | Get user by provider UID               |
+| `getUsers(identifiers: UserIdentifier[])`                             | ❌     | Get users by identifiers               |
+| `createUser(properties: CreateRequest)`                               | ❌     | Create a new user                      |
+| `updateUser(uid: string, properties: UpdateRequest)`                  | ✅     | Update existing user                   |
+| `deleteUser(uid: string)`                                             | ✅     | Delete a user                          |
+| `deleteUsers(uids: string[])`                                         | ❌     | Delete multiple users                  |
+| `listUsers(maxResults?: number, pageToken?: string)`                  | ❌     | List users with pagination             |
+| `importUsers(users: UserImportRecord[], options?: UserImportOptions)` | ❌     | Bulk import users with password hashes |
+
+#### Token Management
+
+| Method                                                               | Status | Description                          |
+| -------------------------------------------------------------------- | ------ | ------------------------------------ |
+| `revokeRefreshTokens(uid: string)`                                   | ✅     | Revoke all refresh tokens for a user |
+| `setCustomUserClaims(uid: string, customUserClaims: object \| null)` | ✅     | Set custom claims                    |
+
+#### Email Actions
+
+| Method                                                                                                       | Status | Description                             |
+| ------------------------------------------------------------------------------------------------------------ | ------ | --------------------------------------- |
+| `generatePasswordResetLink(email: string, actionCodeSettings?: ActionCodeSettings)`                          | ❌     | Generate password reset link            |
+| `generateEmailVerificationLink(email: string, actionCodeSettings?: ActionCodeSettings)`                      | ❌     | Generate email verification link        |
+| `generateVerifyAndChangeEmailLink(email: string, newEmail: string, actionCodeSettings?: ActionCodeSettings)` | ❌     | Generate email change verification link |
+| `generateSignInWithEmailLink(email: string, actionCodeSettings: ActionCodeSettings)`                         | ❌     | Generate sign-in with email link        |
+
+#### Provider Configuration
+
+| Method                                                                               | Status | Description                            |
+| ------------------------------------------------------------------------------------ | ------ | -------------------------------------- |
+| `listProviderConfigs(options: AuthProviderConfigFilter)`                             | ❌     | List SAML/OIDC provider configurations |
+| `getProviderConfig(providerId: string)`                                              | ❌     | Get provider configuration by ID       |
+| `createProviderConfig(config: AuthProviderConfig)`                                   | ❌     | Create new provider configuration      |
+| `updateProviderConfig(providerId: string, updatedConfig: UpdateAuthProviderRequest)` | ❌     | Update provider configuration          |
+| `deleteProviderConfig(providerId: string)`                                           | ❌     | Delete provider configuration          |
 
 ## Environment Setup
 
