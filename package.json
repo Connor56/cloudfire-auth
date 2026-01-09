@@ -1,13 +1,13 @@
 {
   "name": "cloudfire-auth",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "author": "Connor Skelland",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
   },
   "description": "Firebase Auth in Cloudflare Workers.",
-  "homepage": "https://github.com/connorskelland/cloudfire-auth",
+  "homepage": "https://github.com/connor56/cloudfire-auth",
   "keywords": [
     "firebase",
     "auth",
