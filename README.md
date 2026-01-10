@@ -67,7 +67,7 @@ new CloudFireAuth(serviceAccountKey: ServiceAccountKey, kvNamespace?: KVNamespac
 | Method                                                                             | Status | Description                         |
 | ---------------------------------------------------------------------------------- | ------ | ----------------------------------- |
 | `verifyIdToken(idToken: string, checkRevoked?: boolean)`                           | ✅     | Verify Firebase ID tokens           |
-| `verifySessionCookie(sessionCookie: string, checkRevoked?: boolean)`               | ✅     | Verify session cookies              |
+| `verifySessionCookie(sessionCookie: string, checkRevoked?: boolean)`               | ❌     | Verify session cookies              |
 | `createSessionCookie(idToken: string, sessionCookieOptions: SessionCookieOptions)` | ❌     | Create session cookie from ID token |
 | `createCustomToken(uid: string, developerClaims?: object)`                         | ❌     | Create custom token for client SDK  |
 
