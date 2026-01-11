@@ -3,7 +3,7 @@ import typedocSidebar from "../api/typedoc-sidebar.json";
 import guidesSidebar from "../guides/guides-sidebar.json";
 
 export default defineConfig({
-  title: "My Package Docs",
+  title: "CloudFireAuth Docs",
   themeConfig: {
     sidebar: [
       { text: "Intro", link: "/" },
