@@ -22,7 +22,9 @@ function buildDocs() {
 
   saveTypedocSidebar(updatedSidebar);
 
-  execSync("npx vitepress build");
+  addMethodsIndexPage();
+
+  execSync("npx vitepress build docs");
 }
 
 /**
@@ -160,6 +162,7 @@ function tidyMethodContent(methodContent: string): string {
 function appendMethodsToSidebar(sidebar: any[], methodSidebarItems: any[]): any[] {
   sidebar.push({
     text: "Methods",
+    link: "/api/methods/",
     collapsed: true,
     items: methodSidebarItems,
   });
@@ -172,6 +175,16 @@ function appendMethodsToSidebar(sidebar: any[], methodSidebarItems: any[]): any[
  */
 function saveTypedocSidebar(sidebar: any[]): void {
   fs.writeFileSync("docs/api/typedoc-sidebar.json", JSON.stringify(sidebar, null, 2));
+}
+
+/**
+ * Adds a basic index page to the methods directory.
+ */
+function addMethodsIndexPage(): void {
+  fs.writeFileSync(
+    "docs/api/methods/index.md",
+    "# Methods\n\nThis secton of the API contains all the methods available in the CloudFireAuth class."
+  );
 }
 
 buildDocs();
