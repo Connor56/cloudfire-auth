@@ -4,6 +4,7 @@ import guidesSidebar from "../guides/guides-sidebar.json";
 
 export default defineConfig({
   title: "CloudFireAuth Docs",
+  base: "/cloudfire-auth/",
   themeConfig: {
     sidebar: [
       { text: "Intro", link: "/" },
