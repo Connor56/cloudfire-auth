@@ -1,4 +1,4 @@
-interface ProviderUserInfo {
+export interface ProviderUserInfo {
   providerId: string;
   displayName?: string;
   photoUrl?: string;

@@ -1,28 +1,3 @@
-import type {
-  DecodedIdToken,
-  UserRecord,
-  UserIdentifier,
-  GetUsersResult,
-  ListUsersResult,
-  CreateRequest,
-  UpdateRequest,
-  DeleteUsersResult,
-  SessionCookieOptions,
-  AuthProviderConfig,
-  UpdateAuthProviderRequest,
-  AuthProviderConfigFilter,
-  ListProviderConfigResults,
-  ActionCodeSettings,
-  UserImportRecord,
-  UserImportOptions,
-  UserImportResult,
-  HashAlgorithmType,
-  UserMetadataRequest,
-  UserProviderRequest,
-} from "./types/firebase-admin/index.js";
-import type { ServiceAccountKey } from "./types/service-account-key.js";
-import type { SetAccountInfoResponse } from "./types/google-auth.js";
-
 export type {
   DecodedIdToken,
   UserRecord,
@@ -44,7 +19,27 @@ export type {
   HashAlgorithmType,
   UserMetadataRequest,
   UserProviderRequest,
-};
+  SAMLAuthProviderConfig,
+  OIDCAuthProviderConfig,
+  SAMLUpdateAuthProviderRequest,
+  OIDCUpdateAuthProviderRequest,
+  MultiFactorCreateSettings,
+  MultiFactorUpdateSettings,
+  MultiFactorSettings,
+  UserMetadata,
+  UserInfo,
+  UserProvider,
+  FirebaseArrayIndexError,
+  FirebaseError,
+  UidIdentifier,
+  EmailIdentifier,
+  PhoneIdentifier,
+  ProviderIdentifier,
+  CreatePhoneMultiFactorInfoRequest,
+  UpdatePhoneMultiFactorInfoRequest,
+  OAuthResponseType,
+  MultiFactorInfo,
+} from "./types/firebase-admin/index.js";
 
-export type { ServiceAccountKey };
-export type { SetAccountInfoResponse };
+export type { ServiceAccountKey } from "./types/service-account-key.js";
+export type { SetAccountInfoResponse, ProviderUserInfo } from "./types/google-auth.js";

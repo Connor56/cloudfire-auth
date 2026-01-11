@@ -25,6 +25,7 @@
 
 import type { DecodedIdToken } from "./token-verifier.js";
 import type { UserRecord } from "./user-record.js";
+import type { UserMetadata, MultiFactorSettings, UserInfo, MultiFactorInfo } from "./user-record.js";
 import type {
   CreateRequest,
   UpdateRequest,
@@ -32,8 +33,24 @@ import type {
   UpdateAuthProviderRequest,
   AuthProviderConfigFilter,
   ListProviderConfigResults,
+  SAMLAuthProviderConfig,
+  OIDCAuthProviderConfig,
+  SAMLUpdateAuthProviderRequest,
+  OIDCUpdateAuthProviderRequest,
+  MultiFactorCreateSettings,
+  MultiFactorUpdateSettings,
+  UserProvider,
+  CreatePhoneMultiFactorInfoRequest,
+  UpdatePhoneMultiFactorInfoRequest,
+  OAuthResponseType,
 } from "./auth-config.js";
-import type { UserIdentifier } from "./identifier.js";
+import type {
+  UserIdentifier,
+  UidIdentifier,
+  EmailIdentifier,
+  PhoneIdentifier,
+  ProviderIdentifier,
+} from "./identifier.js";
 import type { ActionCodeSettings } from "./action-code-settings.js";
 import type {
   UserImportRecord,
@@ -50,8 +67,16 @@ export type {
   CreateRequest,
   UpdateRequest,
   UserIdentifier,
+  UidIdentifier,
+  EmailIdentifier,
+  PhoneIdentifier,
+  ProviderIdentifier,
   AuthProviderConfig,
+  SAMLAuthProviderConfig,
+  OIDCAuthProviderConfig,
   UpdateAuthProviderRequest,
+  SAMLUpdateAuthProviderRequest,
+  OIDCUpdateAuthProviderRequest,
   AuthProviderConfigFilter,
   ListProviderConfigResults,
   ActionCodeSettings,
@@ -61,7 +86,14 @@ export type {
   HashAlgorithmType,
   UserMetadataRequest,
   UserProviderRequest,
+  MultiFactorCreateSettings,
+  MultiFactorUpdateSettings,
+  UserProvider,
+  CreatePhoneMultiFactorInfoRequest,
+  UpdatePhoneMultiFactorInfoRequest,
+  OAuthResponseType,
 };
+export type { UserMetadata, MultiFactorSettings, UserInfo, MultiFactorInfo };
 /**
  * `FirebaseError` is a subclass of the standard JavaScript `Error` object. In
  * addition to a message string and stack trace, it contains a string code.
