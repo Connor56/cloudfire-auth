@@ -1,0 +1,16 @@
+[
+  {
+    "text": "SvelteKit",
+    "items": [
+      {
+        "text": "Protect API route with verifyIdToken()",
+        "link": "/guides/sveltekit/protect-api-route-with-verify-id-token"
+      },
+      {
+        "text": "Protect Page with verifyIdToken()",
+        "link": "/guides/sveltekit/protect-page-with-verify-id-token"
+      }
+    ],
+    "collapsed": true
+  }
+]
