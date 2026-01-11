@@ -26,8 +26,6 @@ The fastest way to start is:
 4. Decode your service account key into a JavaScript object.
 5. Initialize `CloudFireAuth` with your service account key.
 
-> **Note:** It's safe to put your service account key in an environment variable like `FIREBASE_SERVICE_ACCOUNT_KEY`, because any `.env` variable without a `PUBLIC_` prefix is private by default in SvelteKit.
-
 You can see this done below:
 
 ```ts
