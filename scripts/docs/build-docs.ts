@@ -170,10 +170,15 @@ function appendMethodsToSidebar(sidebar: any[], methodSidebarItems: any[]): any[
 }
 
 /**
- * Saves the typedoc sidebar as formatted JSON.
+ * Orders the typedoc sidebar alphabetically and saves it to file in a
+ * reformatted prettified state.
  * @param sidebar The sidebar JSON array to save.
  */
 function saveTypedocSidebar(sidebar: any[]): void {
+  sidebar.sort((a: any, b: any) => {
+    return a.text.localeCompare(b.text);
+  });
+
   fs.writeFileSync("docs/api/typedoc-sidebar.json", JSON.stringify(sidebar, null, 2));
 }
 
