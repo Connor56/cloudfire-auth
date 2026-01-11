@@ -7,7 +7,14 @@
     "node": ">=18.0.0"
   },
   "description": "Firebase Auth in Cloudflare Workers.",
-  "homepage": "https://github.com/connor56/cloudfire-auth",
+  "homepage": "https://connor56.github.io/cloudfire-auth/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Connor56/cloudfire-auth.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Connor56/cloudfire-auth/issues"
+  },
   "keywords": [
     "firebase",
     "auth",
