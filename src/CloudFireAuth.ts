@@ -34,6 +34,8 @@
  *
  * - getOauth2AccessToken
  *
+ * All of the method documentation beneath the @returns tag is under the MIT
+ * License for this project also.
  */
 import type {
   DecodedIdToken,
@@ -113,6 +115,8 @@ export class CloudFireAuth {
    *
    * @returns A promise fulfilled with a custom token for the
    *   provided `uid` and payload.
+   *
+   * @category Authentication
    */
   async createCustomToken(uid: string, developerClaims?: object): Promise<string> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -141,6 +145,8 @@ export class CloudFireAuth {
    * @returns A promise fulfilled with the
    *   token's decoded claims if the ID token is valid; otherwise, a rejected
    *   promise.
+   *
+   * @category Authentication
    */
   async verifyIdToken(idToken: string, checkRevoked?: boolean): Promise<DecodedIdToken> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -156,6 +162,8 @@ export class CloudFireAuth {
    *
    * @returns A promise fulfilled with the user
    *   data corresponding to the provided `uid`.
+   *
+   * @category User Management
    */
   async getUser(uid: string): Promise<UserRecord> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -172,6 +180,8 @@ export class CloudFireAuth {
    *
    * @returns A promise fulfilled with the user
    *   data corresponding to the provided email.
+   *
+   * @category User Management
    */
   async getUserByEmail(email: string): Promise<UserRecord> {
     return await getUserByEmailHandler(email);
@@ -188,6 +198,8 @@ export class CloudFireAuth {
    *
    * @returns A promise fulfilled with the user
    *   data corresponding to the provided phone number.
+   *
+   * @category User Management
    */
   async getUserByPhoneNumber(phoneNumber: string): Promise<UserRecord> {
     return await getUserByPhoneNumberHandler(phoneNumber);
@@ -204,6 +216,8 @@ export class CloudFireAuth {
    *
    * @returns A promise fulfilled with the user data corresponding to the
    *   given provider id.
+   *
+   * @category User Management
    */
   async getUserByProviderUid(providerId: string, uid: string): Promise<UserRecord> {
     return await getUserByProviderUidHandler(providerId, uid);
@@ -222,6 +236,8 @@ export class CloudFireAuth {
    * @returns A promise that resolves to the corresponding user records.
    * @throws FirebaseAuthError If any of the identifiers are invalid or if more than 100
    *     identifiers are specified.
+   *
+   * @category User Management
    */
   async getUsers(identifiers: UserIdentifier[]): Promise<GetUsersResult> {
     return await getUsersHandler(identifiers);
@@ -240,6 +256,8 @@ export class CloudFireAuth {
    *   users starting without any offset.
    * @returns A promise that resolves with
    *   the current batch of downloaded users and the next page token.
+   *
+   * @category User Management
    */
   async listUsers(maxResults?: number, pageToken?: string): Promise<ListUsersResult> {
     return await listUsersHandler(maxResults, pageToken);
@@ -255,6 +273,8 @@ export class CloudFireAuth {
    *
    * @returns A promise fulfilled with the user
    *   data corresponding to the newly created user.
+   *
+   * @category User Management
    */
   async createUser(properties: CreateRequest): Promise<UserRecord> {
     return await createUserHandler(properties);
@@ -269,6 +289,8 @@ export class CloudFireAuth {
    *
    * @returns An empty promise fulfilled once the user has been
    *   deleted.
+   *
+   * @category User Management
    */
   async deleteUser(uid: string): Promise<void> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -295,6 +317,8 @@ export class CloudFireAuth {
    * @returns A Promise that resolves to the total number of successful/failed
    *     deletions, as well as the array of errors that corresponds to the
    *     failed deletions.
+   *
+   * @category User Management
    */
   async deleteUsers(uids: string[]): Promise<DeleteUsersResult> {
     return await deleteUsersHandler(uids);
@@ -311,6 +335,8 @@ export class CloudFireAuth {
    *
    * @returns A promise fulfilled with the
    *   updated user data.
+   *
+   * @category User Management
    */
   async updateUser(uid: string, properties: UpdateRequest): Promise<UserRecord> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -338,6 +364,8 @@ export class CloudFireAuth {
    *   separate storage systems.
    * @returns A promise that resolves when the operation completes
    *   successfully.
+   *
+   * @category Token Management
    */
   async setCustomUserClaims(uid: string, customUserClaims: object | null): Promise<void> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -361,6 +389,8 @@ export class CloudFireAuth {
    *
    * @returns An empty promise fulfilled once the user's refresh
    *   tokens have been revoked.
+   *
+   * @category Token Management
    */
   async revokeRefreshTokens(uid: string): Promise<void> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -382,6 +412,8 @@ export class CloudFireAuth {
    *   the operation completes with the result of the import. This includes the
    *   number of successful imports, the number of failed imports and their
    *   corresponding errors.
+   *
+   * @category User Management
    */
   async importUsers(users: UserImportRecord[], options?: UserImportOptions): Promise<UserImportResult> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -403,6 +435,8 @@ export class CloudFireAuth {
    *
    * @returns A promise that resolves on success with the
    *   created session cookie.
+   *
+   * @category Authentication
    */
   async createSessionCookie(idToken: string, sessionCookieOptions: SessionCookieOptions): Promise<string> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -432,6 +466,8 @@ export class CloudFireAuth {
    * @returns A promise fulfilled with the
    *   session cookie's decoded claims if the session cookie is valid; otherwise,
    *   a rejected promise.
+   *
+   * @category Authentication
    */
   async verifySessionCookie(sessionCookie: string, checkRevoked?: boolean): Promise<DecodedIdToken> {
     return await verifySessionCookieHandler(sessionCookie, checkRevoked);
@@ -484,6 +520,8 @@ export class CloudFireAuth {
    *     The Android package name and iOS bundle ID are respected only if they
    *     are configured in the same Firebase Auth project.
    * @returns A promise that resolves with the generated link.
+   *
+   * @category Email Actions
    */
   async generatePasswordResetLink(email: string, actionCodeSettings?: ActionCodeSettings): Promise<string> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -536,6 +574,8 @@ export class CloudFireAuth {
    *     The Android package name and iOS bundle ID are respected only if they
    *     are configured in the same Firebase Auth project.
    * @returns A promise that resolves with the generated link.
+   *
+   * @category Email Actions
    */
   async generateEmailVerificationLink(email: string, actionCodeSettings?: ActionCodeSettings): Promise<string> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -564,6 +604,8 @@ export class CloudFireAuth {
    *     The Android package name and iOS bundle ID are respected only if they
    *     are configured in the same Firebase Auth project.
    * @returns A promise that resolves with the generated link.
+   *
+   * @category Email Actions
    */
   async generateVerifyAndChangeEmailLink(
     email: string,
@@ -620,6 +662,8 @@ export class CloudFireAuth {
    *     The Android package name and iOS bundle ID are respected only if they
    *     are configured in the same Firebase Auth project.
    * @returns A promise that resolves with the generated link.
+   *
+   * @category Email Actions
    */
   async generateSignInWithEmailLink(email: string, actionCodeSettings: ActionCodeSettings): Promise<string> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -636,6 +680,8 @@ export class CloudFireAuth {
    * @param options - The provider config filter to apply.
    * @returns A promise that resolves with the list of provider configs meeting the
    *   filter requirements.
+   *
+   * @category Provider Configuration
    */
   async listProviderConfigs(options: AuthProviderConfigFilter): Promise<ListProviderConfigResults> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -655,6 +701,8 @@ export class CloudFireAuth {
    *     config to return.
    * @returns A promise that resolves
    *     with the configuration corresponding to the provided ID.
+   *
+   * @category Provider Configuration
    */
   async getProviderConfig(providerId: string): Promise<AuthProviderConfig> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -672,6 +720,8 @@ export class CloudFireAuth {
    * @param providerId - The provider ID corresponding to the provider
    *     config to delete.
    * @returns A promise that resolves on completion.
+   *
+   * @category Provider Configuration
    */
   async deleteProviderConfig(providerId: string): Promise<void> {
     const oauth2Token = await this.getOauth2AccessToken();
@@ -691,6 +741,8 @@ export class CloudFireAuth {
    *     config to update.
    * @param updatedConfig - The updated configuration.
    * @returns A promise that resolves with the updated provider configuration.
+   *
+   * @category Provider Configuration
    */
   async updateProviderConfig(
     providerId: string,
@@ -709,6 +761,8 @@ export class CloudFireAuth {
    *
    * @param config - The provider configuration to create.
    * @returns A promise that resolves with the created provider configuration.
+   *
+   * @category Provider Configuration
    */
   async createProviderConfig(config: AuthProviderConfig): Promise<AuthProviderConfig> {
     const oauth2Token = await this.getOauth2AccessToken();
