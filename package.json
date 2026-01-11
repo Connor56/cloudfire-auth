@@ -27,7 +27,7 @@
   },
   "scripts": {
     "test": "vitest run",
-    "test:integration": "RUN_INTEGRATION_TESTS=true vitest run",
+    "test:integration": "npx tsx scripts/test-integration.ts",
     "build": "tsc",
     "clean": "tsx scripts/publishing/remove-dist.ts",
     "build:watch": "tsc --watch",
