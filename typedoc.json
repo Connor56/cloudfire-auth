@@ -2,5 +2,6 @@
   "entryPoints": ["src/index.ts"],
   "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
   "out": "docs/api",
-  "readme": "none"
+  "readme": "none",
+  "sort": ["alphabetical", "kind"]
 }
