@@ -7,7 +7,7 @@ A library to make Firebase Auth work in Cloudflare Workers, using native Cloudfl
 - 🔥 Firebase Auth compatibility for Cloudflare Workers
 - ⚡ Native Cloudflare KV integration for token caching
 - 🛡️ Full TypeScript support
-- 📦 One dependency, jose for JWT handling
+- 📦 One dependency, `jose` for JWT handling
 - 🌐 ESM-only for modern JavaScript environments
 
 ## Installation
