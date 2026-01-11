@@ -353,7 +353,7 @@ export class CloudFireAuth {
    * While this will revoke all sessions for a specified user and disable any
    * new ID tokens for existing sessions from getting minted, existing ID tokens
    * may remain active until their natural expiration (one hour). To verify that
-   * ID tokens are revoked, use {@link BaseAuth.verifyIdToken}
+   * ID tokens are revoked, use {@link CloudFireAuth.verifyIdToken}
    * where `checkRevoked` is set to true.
    *
    * @param uid - The `uid` corresponding to the user whose refresh tokens

@@ -134,7 +134,7 @@ export interface FirebaseArrayIndexError {
    */
   error: FirebaseError;
 }
-/** Represents the result of the {@link BaseAuth.getUsers} API. */
+/** Represents the result of the {@link CloudFireAuth.getUsers} API. */
 export interface GetUsersResult {
   /**
    * Set of user records, corresponding to the set of users that were
@@ -147,7 +147,7 @@ export interface GetUsersResult {
 }
 /**
  * Interface representing the object returned from a
- * {@link BaseAuth.listUsers} operation. Contains the list
+ * {@link CloudFireAuth.listUsers} operation. Contains the list
  * of users for the current batch and the next page token if available.
  */
 export interface ListUsersResult {
@@ -162,7 +162,7 @@ export interface ListUsersResult {
   pageToken?: string;
 }
 /**
- * Represents the result of the {@link BaseAuth.deleteUsers}.
+ * Represents the result of the {@link CloudFireAuth.deleteUsers}.
  * API.
  */
 export interface DeleteUsersResult {
@@ -185,7 +185,7 @@ export interface DeleteUsersResult {
 }
 /**
  * Interface representing the session cookie options needed for the
- * {@link BaseAuth.createSessionCookie} method.
+ * {@link CloudFireAuth.createSessionCookie} method.
  */
 export interface SessionCookieOptions {
   /**

@@ -211,7 +211,7 @@ export interface CreateRequest extends UpdateRequest {
 /**
  * The response interface for listing provider configs. This is only available
  * when listing all identity providers' configurations via
- * {@link BaseAuth.listProviderConfigs}.
+ * {@link CloudFireAuth.listProviderConfigs}.
  */
 export interface ListProviderConfigResults {
   /**
@@ -226,7 +226,7 @@ export interface ListProviderConfigResults {
 /**
  * The filter interface used for listing provider configurations. This is used
  * when specifying how to list configured identity providers via
- * {@link BaseAuth.listProviderConfigs}.
+ * {@link CloudFireAuth.listProviderConfigs}.
  */
 export interface AuthProviderConfigFilter {
   /**
@@ -249,7 +249,7 @@ export interface AuthProviderConfigFilter {
 /**
  * The request interface for updating a SAML Auth provider. This is used
  * when updating a SAML provider's configuration via
- * {@link BaseAuth.updateProviderConfig}.
+ * {@link CloudFireAuth.updateProviderConfig}.
  */
 export interface SAMLUpdateAuthProviderRequest {
   /**
@@ -291,7 +291,7 @@ export interface SAMLUpdateAuthProviderRequest {
 /**
  * The request interface for updating an OIDC Auth provider. This is used
  * when updating an OIDC provider's configuration via
- * {@link BaseAuth.updateProviderConfig}.
+ * {@link CloudFireAuth.updateProviderConfig}.
  */
 export interface OIDCUpdateAuthProviderRequest {
   /**
@@ -489,7 +489,7 @@ export interface BaseAuthProviderConfig {
  * The
  * [SAML](http://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-tech-overview-2.0.html)
  * Auth provider configuration interface. A SAML provider can be created via
- * {@link BaseAuth.createProviderConfig}.
+ * {@link CloudFireAuth.createProviderConfig}.
  */
 export interface SAMLAuthProviderConfig extends BaseAuthProviderConfig {
   /**
@@ -547,7 +547,7 @@ export interface OAuthResponseType {
 /**
  * The [OIDC](https://openid.net/specs/openid-connect-core-1_0-final.html) Auth
  * provider configuration interface. An OIDC provider can be created via
- * {@link BaseAuth.createProviderConfig}.
+ * {@link CloudFireAuth.createProviderConfig}.
  */
 export interface OIDCAuthProviderConfig extends BaseAuthProviderConfig {
   /**
@@ -585,7 +585,7 @@ export interface OIDCAuthProviderConfig extends BaseAuthProviderConfig {
 }
 /**
  * The Auth provider configuration type.
- * {@link BaseAuth.createProviderConfig}.
+ * {@link CloudFireAuth.createProviderConfig}.
  */
 export type AuthProviderConfig = SAMLAuthProviderConfig | OIDCAuthProviderConfig;
 /**

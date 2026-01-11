@@ -252,7 +252,7 @@ export declare class UserRecord {
    * when uploading this user, as is typical when migrating from another Auth
    * system, this will be an empty string. If no password is set, this is
    * null. This is only available when the user is obtained from
-   * {@link BaseAuth.listUsers}.
+   * {@link CloudFireAuth.listUsers}.
    */
   readonly passwordHash?: string;
   /**
@@ -260,13 +260,13 @@ export declare class UserRecord {
    * algorithm (SCRYPT) is used. If a different hashing algorithm had been used to
    * upload this user, typical when migrating from another Auth system, this will
    * be an empty string. If no password is set, this is null. This is only
-   * available when the user is obtained from {@link BaseAuth.listUsers}.
+   * available when the user is obtained from {@link CloudFireAuth.listUsers}.
    */
   readonly passwordSalt?: string;
   /**
    * The user's custom claims object if available, typically used to define
    * user roles and propagated to an authenticated user's ID token.
-   * This is set via {@link BaseAuth.setCustomUserClaims}
+   * This is set via {@link CloudFireAuth.setCustomUserClaims}
    */
   readonly customClaims?: {
     [key: string]: any;
@@ -278,7 +278,7 @@ export declare class UserRecord {
   /**
    * The date the user's tokens are valid after, formatted as a UTC string.
    * This is updated every time the user's refresh token are revoked either
-   * from the {@link BaseAuth.revokeRefreshTokens}
+   * from the {@link CloudFireAuth.revokeRefreshTokens}
    * API or from the Firebase Auth backend on big account changes (password
    * resets, password or email updates, etc).
    */

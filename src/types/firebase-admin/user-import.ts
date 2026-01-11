@@ -53,7 +53,7 @@ export type HashAlgorithmType =
 
 /**
  * Interface representing the user import options needed for
- * {@link BaseAuth.importUsers} method. This is used to
+ * {@link CloudFireAuth.importUsers} method. This is used to
  * provide the password hashing algorithm information.
  */
 export interface UserImportOptions {
@@ -155,7 +155,7 @@ export interface UserProviderRequest {
 
 /**
  * Interface representing a user to import to Firebase Auth via the
- * {@link BaseAuth.importUsers} method.
+ * {@link CloudFireAuth.importUsers} method.
  */
 export interface UserImportRecord {
   /**
@@ -228,7 +228,7 @@ export interface UserImportRecord {
 }
 
 /**
- * Interface representing the result of the {@link BaseAuth.importUsers} API.
+ * Interface representing the result of the {@link CloudFireAuth.importUsers} API.
  */
 export interface UserImportResult {
   /**

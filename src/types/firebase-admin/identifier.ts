@@ -25,7 +25,7 @@
 /**
  * Used for looking up an account by uid.
  *
- * See {@link BaseAuth.getUsers}.
+ * See {@link CloudFireAuth.getUsers}.
  */
 export interface UidIdentifier {
   uid: string;
@@ -33,7 +33,7 @@ export interface UidIdentifier {
 /**
  * Used for looking up an account by email.
  *
- * See {@link BaseAuth.getUsers}.
+ * See {@link CloudFireAuth.getUsers}.
  */
 export interface EmailIdentifier {
   email: string;
@@ -41,7 +41,7 @@ export interface EmailIdentifier {
 /**
  * Used for looking up an account by phone number.
  *
- * See {@link BaseAuth.getUsers}.
+ * See {@link CloudFireAuth.getUsers}.
  */
 export interface PhoneIdentifier {
   phoneNumber: string;
@@ -49,7 +49,7 @@ export interface PhoneIdentifier {
 /**
  * Used for looking up an account by federated provider.
  *
- * See {@link BaseAuth.getUsers}.
+ * See {@link CloudFireAuth.getUsers}.
  */
 export interface ProviderIdentifier {
   providerId: string;
