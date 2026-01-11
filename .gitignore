@@ -12,3 +12,6 @@ mise.toml
 
 # Ignore Custom Claude setup
 .claude/
+
+# Ignore the Vitepress cache files
+docs/.vitepress/cache/
