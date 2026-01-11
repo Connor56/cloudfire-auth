@@ -15,3 +15,6 @@ mise.toml
 
 # Ignore the Vitepress cache files
 docs/.vitepress/cache/
+
+# Ignore the automatically generated typedoc files
+docs/api/
