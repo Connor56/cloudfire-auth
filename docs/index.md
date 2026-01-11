@@ -69,7 +69,7 @@ new CloudFireAuth(serviceAccountKey: ServiceAccountKey, kvNamespace?: KVNamespac
 
 The tables below represent the entire API surface of the Firebase Admin SDK. A tick or cross has been added to each to indicate whether the method is supported by this library.
 
-You can read more about each method and see examples [here](/api/methods).
+You can read more about each method and see examples [here](/api/methods/index.md).
 
 If you'd like to suggest which method should be supported next, please visit this [Discussion](https://github.com/Connor56/cloudfire-auth/discussions/1)
 
