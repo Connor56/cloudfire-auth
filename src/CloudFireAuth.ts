@@ -424,7 +424,7 @@ export class CloudFireAuth {
    * for code samples and detailed documentation
    *
    * @param sessionCookie - The session cookie to verify.
-   * @param checkForRevocation -  Whether to check if the session cookie was
+   * @param checkRevoked -  Whether to check if the session cookie was
    *   revoked. This requires an extra request to the Firebase Auth backend to
    *   check the `tokensValidAfterTime` time for the corresponding user.
    *   When not specified, this additional check is not performed.
