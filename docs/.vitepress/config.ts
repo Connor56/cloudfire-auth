@@ -18,4 +18,14 @@ export default defineConfig({
       provider: "local",
     },
   },
+  head: [
+    [
+      "script",
+      {
+        defer: true,
+        src: "https://static.cloudflareinsights.com/beacon.min.js",
+        "data-cf-beacon": '{"token": "c150212cb83e4a88a4f49b520bdcbfd7"}',
+      },
+    ],
+  ],
 });
